@@ -24,11 +24,20 @@ SOFTWARE.
 
 
 from collections import namedtuple
+import logging
+
 
 class LexerError(Exception):
     """
     LexerError
     """
+
+
+class PDFLexicalError(Exception):
+    """
+    Lexical error
+    """
+
 
 BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}
 LINE_FEED = 10
@@ -40,6 +49,7 @@ CLOSE_ANGLE_BRACKET = 62
 OPEN_SQUARE_BRACKET = 91
 CLOSE_SQUARE_BRACKET = 93
 FORWARD_SLASH = 47
+BACK_SLASH = 92
 OPEN_CURLY_BRACKET = 123
 CLOSE_CURLY_BRAKET = 125
 PERCENTAGE = 37
@@ -47,7 +57,7 @@ POINT = 46
 PLUS = 43
 MINUS = 45
 KEYWORD_REFERENCE = 82
-
+CHARACTER_X = 120
 
 DELIMITERS = {
     OPEN_PARENTHESIS, CLOSE_PARENTHESIS, OPEN_ANGLE_BRACKET, CLOSE_ANGLE_BRACKET,
@@ -60,27 +70,31 @@ SINGLETONS = {
 }
 
 KEYWORDS = [
-    b"trailer", b"xref", b"null", b"startxref", b"endstream", b"n", b'f' # the order is important here!
+    b"trailer", b"xref", b"null", b"startxref", b"endstream", b"n", b"f" # the order is important here!
 ]
 
 Lexeme = namedtuple("Lexeme", ["type", "value"])
 
 is_digit = lambda x : x >= 48 and x < 58
+is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71)
+
+STRING_ESCAPE_SEQUENCES = {"n" : "\n", "r" : "\r", "b" : "\b", "t" : "\t", "f" : "\f"}
 
 
 # lets define lexeme types
-LEXEME_STRING = object()
-LEXEME_NAME = object()
-LEXEME_NUMBER = object()
-LEXEME_KEYWORD = object()
-LEXEME_SINGLETON = object()
-LEXEME_BOOLEAN = object()
-LEXEME_DICT_OPEN = object()
-LEXEME_DICT_CLOSE = object()
-LEXEME_STREAM = object()
-LEXEME_NULL = object()
-LEXEME_OBJ_OPEN = object()
-LEXEME_OBJ_CLOSE = object()
+LEXEME_STRING_LITERAL = 0
+LEXEME_STRING_HEXADECIMAL = 1
+LEXEME_NAME = 2
+LEXEME_NUMBER = 3
+LEXEME_KEYWORD = 4
+LEXEME_SINGLETON = 5
+LEXEME_BOOLEAN = 6
+LEXEME_DICT_OPEN = 7
+LEXEME_DICT_CLOSE = 8
+LEXEME_STREAM = 9
+LEXEME_NULL = 10
+LEXEME_OBJ_OPEN = 11
+LEXEME_OBJ_CLOSE = 12
 
 
 
@@ -97,7 +111,6 @@ class Seekable:
     def read(self, n = 0):
         if self.__pos == self.__len:
             return b''
-        
         if n == 1:
             val = [self.__source[self.__pos]]
         else:
@@ -131,7 +144,18 @@ class Seekable:
 
 class Lexer:
 
-    def __init__(self, source : 'Seekable'):
+    def __init__(self, source : 'Seekable', contextSize = 100):
+        """
+        Creates a new instance of a PDF lexical analyzer associated to the given character 
+        stream source.
+
+        Parameters:
+        -----------
+        source : TextIOWrapper or Seekable object.
+            The source from where characters are read. The object must implement the 
+            read, tell and seek protocol typical of a file handle.
+        
+        """
         self.__source = source
         cpos = source.tell()
         source.seek(0, 2)
@@ -140,6 +164,7 @@ class Lexer:
         self.__current = self.__source.read(1)[0]
         self.__lexemesBuffer = list()
         self.__movesHistory = list()
+        self.__contextSize = contextSize
         self.__ended = False
         self.__currentLexeme = None
     
@@ -173,6 +198,30 @@ class Lexer:
         return pos
 
     
+    def __raise_lexer_error(self, msg):
+        """
+        Called when a lexical error is encountered during the input tokenization.
+        In general, a lexical error is given by an unrecognised characters sequence.
+
+        Parameters:
+        -----------
+        msg : str
+            A description of the lexical error.
+        
+        Raise:
+        ------
+        PDFLexicalError
+        """
+        # collect the context in which the error occurred
+        oldPos = self.__source.tell()
+        currentPos = max(oldPos -  self.__contextSize // 2, 0)
+        self.__source.seek(currentPos, 0)
+        context = self.__source.read(self.__contextSize)
+        self.__source.seek(oldPos, 0)
+        finalMsg = "{}\n\nContext:\n\t{}\n\t{}^".format(msg, context, " "*(self.__contextSize//2-2))
+        raise PDFLexicalError(finalMsg)
+
+
     def move_at_position(self, pos):
         previousLexeme = self.current_lexeme
         previousPosition = self.__source.tell()
@@ -239,30 +288,57 @@ class Lexer:
 
     def __parse_string(self):
         if self.__current == OPEN_PARENTHESIS:
+            # This is the case where we parse string literals
+            self.__advance()
             openParentheses = 1
             buffer = bytearray()
             while openParentheses > 0:
-                self.__advance()
                 if self.__current == OPEN_PARENTHESIS:
                     openParentheses += 1
                 elif self.__current == CLOSE_PARENTHESIS:
                     openParentheses -= 1
+                elif self.__current == BACK_SLASH:
+                    # parse special content
+                    self.__advance()
+                    if not is_digit(self.__current):
+                        buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__current, self.__current))
+                        self.__advance()
+                        continue
+                    else:
+                        digits = bytearray()
+                        while is_digit(self.__current) and len(digits) < 3:
+                            digits.append(self.__current)
+                            self.__advance()
+                        charCode = sum(int(x) << 3*(len(digits) -i - 1) for i, x in enumerate(digits.decode('ascii')))
+                        buffer.append(chr(charCode).encode('utf-8')[0])
+                        continue
                 buffer.append(self.__current)
-            self.__advance()
-            buffer.pop()
-            # TODO: implement fully the specification
-            return Lexeme(LEXEME_STRING, buffer.decode('utf-8'))
-        else:
-            buffer = bytearray()
-            while self.__current != CLOSE_ANGLE_BRACKET:
-                # TODO: check validity of value
                 self.__advance()
-                if self.__current in BLANKS: continue
-                buffer.append(self.__current)
             buffer.pop()
+            try:
+                return Lexeme(LEXEME_STRING_LITERAL, buffer.decode(encoding='utf-8'))
+            except UnicodeDecodeError:
+                return Lexeme(LEXEME_STRING_LITERAL, buffer.decode(encoding='cp1252'))
+        else:
+            # Hexadecimal string
             self.__advance()
-            # TODO: convert hex to char
-            return Lexeme(LEXEME_STRING, buffer.decode('utf-8'))
+            buffer = bytearray()
+            while True:
+                if self.__current in BLANKS:
+                    self.__advance()
+                    continue
+                if not is_hex_digit(self.__current): break
+                buffer.append(self.__current)
+                self.__advance()
+            if self.__current != CLOSE_ANGLE_BRACKET:
+                self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
+            self.__advance()
+            if len(buffer) % 2 == 1:
+                buffer.extend(b'0')
+            newBuffer = bytearray()
+            buffer = [(x - 48) if x < 58 else (x - 55) for x in buffer]
+            newBuffer = bytes([(buffer[i] << 4) + buffer[i+1] for i in range(0, len(buffer) - 1, 2)])
+            return Lexeme(LEXEME_STRING_HEXADECIMAL, newBuffer)
 
 
     def __parse_name(self):
@@ -271,7 +347,6 @@ class Lexer:
         while not(self.__current in BLANKS or self.__current in DELIMITERS):
             buffer.append(self.__current)
             self.__advance()
-        
         if len(buffer) == 0:
             buffer.append(FORWARD_SLASH)
         return Lexeme(LEXEME_NAME, buffer.decode('ascii'))
@@ -291,19 +366,23 @@ class Lexer:
             buff.append(POINT)
             self.__advance()
         else:
-            return Lexeme(LEXEME_NUMBER, int(buff.decode('ascii')))
+            return Lexeme(LEXEME_NUMBER, int(buff.decode('utf-8')))
         
         while is_digit(self.__current):
             buff.append(self.__current)
             self.__advance()
 
-        return Lexeme(LEXEME_NUMBER, float(buff.decode('ascii')))
+        return Lexeme(LEXEME_NUMBER, float(buff.decode('utf-8')))
 
     
     def __parse_litteral(self, lit):
+        diff = False
         for i, l in enumerate(lit):
-            if self.__peek(i) != l: break
-        if i == len(lit) - 1:
+            p = self.__peek(i)
+            if p != l:
+                diff = True
+                break
+        if not diff:
             # ok, we matched it
             for i in range(len(lit)):
                 self.__advance()
@@ -313,7 +392,9 @@ class Lexer:
 
 
     def __match_keyword(self):
+        logging.debug("Lexer: starting matching keywords..")
         for k in KEYWORDS:
+            logging.debug("Lexer: trying to match keyword '{}' - current position: '{}'".format(k, chr(self.__current)))
             if self.__parse_litteral(k):
                 return Lexeme(LEXEME_KEYWORD, k)
         else:
@@ -385,7 +466,7 @@ class Lexer:
         else:
             match = self.__match_keyword()
             if match == False:
-                raise LexerError("Invalid characters sequence in input stream.")
+                raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
             else:
                 self.__currentLexeme = match
         return self.__currentLexeme

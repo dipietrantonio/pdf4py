@@ -30,13 +30,6 @@ from .lexer import *
 from .decoders import decode
 
 
-def _get_handle(obj):
-    if isinstance(obj, str):
-        return open(obj, "rb")
-    elif isinstance(obj, bytes) or isinstance(obj, bytearray):
-        return Seekable(obj)
-
-
 
 class PDFSyntaxError(Exception):
     """
@@ -44,10 +37,15 @@ class PDFSyntaxError(Exception):
     """
 
 
+class PDFUnsupportedError(Exception):
+    """
+    When the parser does not support a PDF feature.
+    """
+
+
 PDFStream = namedtuple("PDFStream", ["dictionary", "stream"])
 PDFReference = namedtuple("PDFReference", ["object_number", "generation_number"])
 PDFIndirectObject = namedtuple("PDFIndirectObject", ["object_number", "generation_number", "value"])
-
 XrefInUseEntry = namedtuple("XrefInUseEntry", ["offset", "object_number", "generation_number"])
 XrefCompressedEntry = namedtuple("XrefCompressedEntry", ["object_number", "objstm_number", "index"])
 
@@ -62,7 +60,7 @@ class XRefTable:
     def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set', compressedObjects : 'dict' = None, sideObjstm = None):
         self.__inUseObjects = inUseObjects
         self.__freeObjects = freeObjects
-        self.__compressedObjects = compressedObjects
+        self.__compressedObjects = {} if compressedObjects is None else compressedObjects
         self.__previous = previous
         self.__sideObjstm = sideObjstm
         
@@ -82,16 +80,17 @@ class XRefTable:
         if key in self.__freeObjects:
             return None
         if self.__previous is None:
+            logging.debug("Key not found: " + str(key))
             raise KeyError()
         else:
-            return self.__previous[v]
+            return self.__previous[key]
         
 
     def active_keys(self):
         if not hasattr(self, "__activeKeys"):
             mykeys = list(self.__inUseObjects) + list(self.__compressedObjects)
             if self.__previous is not None:
-                prevkeys = self.__previous.in_use_keys()
+                prevkeys = self.__previous.active_keys()
                 for k in prevkeys:
                     if k not in self.__freeObjects:
                         mykeys.append(k)
@@ -103,8 +102,13 @@ class XRefTable:
 class PDFParser:
 
 
-    def __init__(self, obj):    
-        self.__handle = _get_handle(obj)
+    def __init__(self, obj):
+        if isinstance(obj, str):
+            self.__handle = open(obj, "rb")
+        elif isinstance(obj, bytes) or isinstance(obj, bytearray):
+            self.__handle = Seekable(obj)
+        else:
+            raise ValueError("PDFParser currently cannot parse from sources of type '{}'.".format(type(obj)))
         self.__lexer = Lexer(self.__handle)
         self.__parse_xref()
        
@@ -112,12 +116,15 @@ class PDFParser:
 
     def parse_xref_entry(self, xrefEntry : 'PDFXrefEntity'):
         if isinstance(xrefEntry, XrefInUseEntry):
+            logging.debug("Parsing InUseEntry {} ..".format(repr(xrefEntry)))
             self.__lexer.move_at_position(xrefEntry.offset)
             parsedObject = self.__parse_object()
             self.__lexer.move_back()
             return parsedObject
         elif isinstance(xrefEntry, XrefCompressedEntry):
             # now parse the object stream containing the object the entry refers to
+
+            logging.debug("Parsing Compressed Entry {} ..".format(repr(xrefEntry)))
             try:
                 objStmRef = self.xrefTable[(xrefEntry.objstm_number, 0)]
             except KeyError:
@@ -155,6 +162,7 @@ class PDFParser:
         while xrefPos >= 0: # while there are xref to process
             currentLexeme = self.__lexer.move_at_position(xrefPos)
             if currentLexeme.type == LEXEME_KEYWORD and currentLexeme.value == b"xref":
+                logging.debug("Parsing an xref table..")
                 # then it is a normal xref table
                 trailer, xrefData = self.__parse_xref_table()
                 xrefs.insert(0, xrefData)
@@ -168,6 +176,7 @@ class PDFParser:
                     xrefs.insert(0, xrefDataStream)
             else:
                 # it can only be a xref stream
+                logging.debug("Parsing an xref stream..")
                 trailer, xrefData = self.__parse_xref_stream()
                 xrefs.insert(0, xrefData)
                 
@@ -194,7 +203,7 @@ class PDFParser:
         if not isinstance(o.value, PDFStream):
             raise PDFSyntaxError("Expecting a stream containing 'xref' information, but not found.")
         objStmDict, objStm = o.value
-        if objStmDict['Type'] != 'XRef':
+        if objStmDict['Type'].value != 'XRef':
             raise PDFSyntaxError("Expecting a stream containing 'xref' information, but not found.")
         trailer = {k : objStmDict[k] for k in objStmDict if k in TRAILER_FIELDS}
         xrefData = objStm()
@@ -269,9 +278,10 @@ class PDFParser:
                     continue # skip head of the free objects linked list  (will not be used)
                 if markerToken.value == b'n':
                     xrefEntry = XrefInUseEntry(offsetToken.value, start + i, genNumberToken.value)
+                    logging.debug("xref entry: {}".format(xrefEntry))
                     inUseObjects[(xrefEntry.object_number, xrefEntry.generation_number)] = xrefEntry
                 else:
-                    xrefEntry = XrefFreeEntry(start + i, genNumberToken.value - 1)
+                    xrefEntry = (start + i, genNumberToken.value - 1)
                     freeObjects.add(xrefEntry)
             next(self.__lexer)
         # now there must be the trailer
@@ -332,6 +342,7 @@ class PDFParser:
             nextLexeme = next(self.__lexer)
         except StopIteration:
             logging.info("__parse_dictionary_or_stream: end of stream reached.")
+            logging.info(str(D))
             return D
         
         if not self.__lexer.current_lexeme.type == LEXEME_STREAM:
@@ -368,9 +379,20 @@ class PDFParser:
                 self.__lexer.current_lexeme.value == '[':
             # it is a list of objects, parse it
             return self.parse_list()
+        
         elif self.__lexer.current_lexeme.type == LEXEME_DICT_OPEN:
             return self.__parse_dictionary_or_stream()
-        elif self.__lexer.current_lexeme.type in [LEXEME_STRING, LEXEME_BOOLEAN, LEXEME_NAME, LEXEME_NULL]:
+        
+        elif self.__lexer.current_lexeme.type in [LEXEME_STRING_HEXADECIMAL, LEXEME_STRING_LITERAL, LEXEME_NAME]:
+            # because those types can be confused or are indistinguishable, we return the lexeme
+            s = self.__lexer.current_lexeme
+            try:
+                next(self.__lexer)
+            except StopIteration:
+                logging.info("__parse_object: end of stream reached.")
+            return s
+        elif self.__lexer.current_lexeme.type == LEXEME_BOOLEAN:
+            # a boolean token can be represented by Python's native bool type
             s = self.__lexer.current_lexeme.value
             try:
                 next(self.__lexer)
@@ -378,6 +400,7 @@ class PDFParser:
                 logging.info("__parse_object: end of stream reached.")
             return s
         elif self.__lexer.current_lexeme.type == LEXEME_NUMBER:
+            # Here we can parse a single number or a reference to an indirect object
             lex1 = self.__lexer.current_lexeme
             try:
                 lex2 = next(self.__lexer)

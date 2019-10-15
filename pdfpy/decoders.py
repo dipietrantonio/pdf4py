@@ -45,7 +45,7 @@ def decode(D : 'dict', sec : 'dict', data):
     if isinstance(filtersChain, list):
         filtersChain = tuple(x.value for x in filtersChain)
     else:
-        filtersChain = (filtersChain,)
+        filtersChain = (filtersChain.value,)
     filterParams = D.get('FilterParams')
     for filterSpecifier in reversed(filtersChain):
         decoder = decoders[filterSpecifier]
