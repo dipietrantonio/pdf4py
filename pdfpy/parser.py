@@ -37,6 +37,12 @@ class PDFSyntaxError(Exception):
     """
 
 
+class PDFUnexpectedTokenError(PDFSyntaxError):
+    """
+    When the parser cannot recognise the grammar.
+    """
+
+
 class PDFUnsupportedError(Exception):
     """
     When the parser does not support a PDF feature.
@@ -197,7 +203,7 @@ class PDFParser:
 
     def __parse_xref_stream(self):
         o = self.__parse_object()
-        if o is None or not isinstance(o, PDFIndirectObject):
+        if not isinstance(o, PDFIndirectObject):
             raise PDFSyntaxError("Expecting a 'xref' rection, but it has not been found.")
         # TODO parse stream
         if not isinstance(o.value, PDFStream):
@@ -299,21 +305,16 @@ class PDFParser:
         next(self.__lexer)
         L = list()
         while True:
-            o = self.__parse_object()
-            if o is None:
-                # No object has been parsed
+            if self.__lexer.current_lexeme.value == ']':
                 break
-            L.append(o)
-        if self.__lexer.current_lexeme.type == LEXEME_SINGLETON and\
-                self.__lexer.current_lexeme.value == ']':
-            # ok, we successfully parsed a list
-            try:
-                next(self.__lexer) # remove CLOSE_SQUARE_BRAKET from stream
-            except StopIteration:
-                logging.debug("Stop iteration reached while parsing a list.")
-            return L
-        else:
-            raise PDFSyntaxError("parse_list: end of list not found.")
+            L.append(self.__parse_object())
+
+        # ok, we successfully parsed a list
+        try:
+            next(self.__lexer) # remove CLOSE_SQUARE_BRAKET from stream
+        except StopIteration:
+            logging.debug("Stop iteration reached while parsing a list.")
+        return L
 
     
     def __parse_dictionary_or_stream(self):
@@ -332,10 +333,7 @@ class PDFParser:
                 raise PDFSyntaxError("Expecting dictionary key, but not found.")
             # now get the value
             next(self.__lexer)
-            keyValue = self.__parse_object()
-            if keyValue is None:
-                raise PDFSyntaxError("Expecting dictionary value, but couldn't parse it.")
-            
+            keyValue = self.__parse_object()    
             D[keyToken.value] = keyValue
         
         try:
@@ -375,6 +373,9 @@ class PDFParser:
 
 
     def __parse_object(self):
+        """
+        Parse a generic PDF object.
+        """
         if self.__lexer.current_lexeme.type == LEXEME_SINGLETON and\
                 self.__lexer.current_lexeme.value == '[':
             # it is a list of objects, parse it
@@ -425,8 +426,6 @@ class PDFParser:
             elif lex3.type == LEXEME_OBJ_OPEN:
                 next(self.__lexer)
                 o = self.__parse_object()
-                if o is None:
-                    raise PDFSyntaxError("Expecting object definition, but not found.")
                 if not self.__lexer.current_lexeme.type == LEXEME_OBJ_CLOSE:
                     raise PDFSyntaxError("Expecting matching 'endobj' for 'obj', but not found.")
                 try:
@@ -437,6 +436,15 @@ class PDFParser:
             else:
                 # it was just a number, return it and put back other stuff in the stack
                 self.__lexer.put_back(lex2, lex3)
-                return lex1.value        
-        else:
+                return lex1.value
+        
+        elif self.__lexer.current_lexeme.type == LEXEME_KEYWORD and self.__lexer.current_lexeme.value == b"null":
+            try:
+                next(self.__lexer)
+            except StopIteration:
+                logging.info("__parse_object: end of stream reached.")
             return None
+
+        else:
+            logging.info("__parse_object: unexpected lexeme encountered ({}).".format(self.__lexer.current_lexeme))
+            raise PDFSyntaxError("Unexpected lexeme encountered ({}).".format(self.__lexer.current_lexeme))
