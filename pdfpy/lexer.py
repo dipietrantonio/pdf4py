@@ -76,7 +76,7 @@ KEYWORDS = [
 Lexeme = namedtuple("Lexeme", ["type", "value"])
 
 is_digit = lambda x : x >= 48 and x < 58
-is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71)
+is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71) or (x >= 97 and x < 103)
 
 STRING_ESCAPE_SEQUENCES = {"n" : "\n", "r" : "\r", "b" : "\b", "t" : "\t", "f" : "\f"}
 
@@ -143,7 +143,7 @@ class Seekable:
 
 class Lexer:
 
-    def __init__(self, source : 'Seekable', contextSize = 100):
+    def __init__(self, source : 'Seekable', contextSize = 200):
         """
         Creates a new instance of a PDF lexical analyzer associated to the given character 
         stream source.
@@ -326,16 +326,17 @@ class Lexer:
                 if self.__current in BLANKS:
                     self.__advance()
                     continue
-                if not is_hex_digit(self.__current): break
+                if not is_hex_digit(self.__current):
+                    break
                 buffer.append(self.__current)
                 self.__advance()
             if self.__current != CLOSE_ANGLE_BRACKET:
                 self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
             self.__advance()
             if len(buffer) % 2 == 1:
-                buffer.extend(b'0')
+                buffer.extend(48)
             newBuffer = bytearray()
-            buffer = [(x - 48) if x < 58 else (x - 55) for x in buffer]
+            buffer = [(x - 48) if x < 58 else ((x - 55) if x < 71 else (x - 87)) for x in buffer]
             newBuffer = bytes([(buffer[i] << 4) + buffer[i+1] for i in range(0, len(buffer) - 1, 2)])
             return Lexeme(LEXEME_STRING_HEXADECIMAL, newBuffer)
 
