@@ -312,7 +312,7 @@ class Lexer:
                             digits.append(self.__current)
                             self.__advance()
                         charCode = sum(int(x) << 3*(len(digits) -i - 1) for i, x in enumerate(digits.decode('ascii')))
-                        buffer.append(chr(charCode).encode('utf-8')[0])
+                        buffer.append(charCode)
                         continue
                 buffer.append(self.__current)
                 self.__advance()

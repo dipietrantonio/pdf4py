@@ -23,24 +23,25 @@ SOFTWARE.
 """
 
 BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}
-LINE_FEED = 10
-CARRIAGE_RETURN = 13
-OPEN_PARENTHESIS = 40
-CLOSE_PARENTHESIS = 41
-OPEN_ANGLE_BRACKET = 60
-CLOSE_ANGLE_BRACKET = 62
-OPEN_SQUARE_BRACKET = 91
-CLOSE_SQUARE_BRACKET = 93
-FORWARD_SLASH = 47
-BACK_SLASH = 92
-OPEN_CURLY_BRACKET = 123
-CLOSE_CURLY_BRAKET = 125
-PERCENTAGE = 37
-POINT = 46
-PLUS = 43
-MINUS = 45
-KEYWORD_REFERENCE = 82
-CHARACTER_X = 120
+LINE_FEED = ord('\n')
+HORIZONTAL_TAB = ord('\t')
+CARRIAGE_RETURN = ord('\r')
+OPEN_PARENTHESIS = ord('(')
+CLOSE_PARENTHESIS = ord(')')
+OPEN_ANGLE_BRACKET = ord('<')
+CLOSE_ANGLE_BRACKET = ord('>')
+OPEN_SQUARE_BRACKET = ord('[')
+CLOSE_SQUARE_BRACKET = ord(']')
+FORWARD_SLASH = ord('/')
+BACK_SLASH = ord("\\")
+OPEN_CURLY_BRACKET = ord('{')
+CLOSE_CURLY_BRAKET = ord('}')
+PERCENTAGE = ord('%')
+POINT = ord('.')
+PLUS = ord('+')
+MINUS = ord('-')
+KEYWORD_REFERENCE = ord('R')
+CHARACTER_X = ord('x')
 
 
 DELIMITERS = {
@@ -63,4 +64,4 @@ KEYWORDS = [
 is_digit = lambda x : x >= 48 and x < 58
 is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71) or (x >= 97 and x < 103)
 
-STRING_ESCAPE_SEQUENCES = {"n" : "\n", "r" : "\r", "b" : "\b", "t" : "\t", "f" : "\f"}
+STRING_ESCAPE_SEQUENCES = {ord("n") : LINE_FEED, ord("r") : CARRIAGE_RETURN, ord("b") : "\b", ord("t") : HORIZONTAL_TAB, ord("f") : "\f"}
