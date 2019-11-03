@@ -25,6 +25,8 @@ SOFTWARE.
 
 from collections import namedtuple
 import logging
+from ._charset import *
+
 
 
 class LexerError(Exception):
@@ -38,47 +40,32 @@ class PDFLexicalError(Exception):
     Lexical error
     """
 
+# ------------------------------------------------------------------------------------
+# Lexeme classes
+# Here are defined all the classes used to represent a valid lexeme in the pdf language
+# that cannot otherwise be represented with standard python types.
+# ------------------------------------------------------------------------------------
 
-BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}
-LINE_FEED = 10
-CARRIAGE_RETURN = 13
-OPEN_PARENTHESIS = 40
-CLOSE_PARENTHESIS = 41
-OPEN_ANGLE_BRACKET = 60
-CLOSE_ANGLE_BRACKET = 62
-OPEN_SQUARE_BRACKET = 91
-CLOSE_SQUARE_BRACKET = 93
-FORWARD_SLASH = 47
-BACK_SLASH = 92
-OPEN_CURLY_BRACKET = 123
-CLOSE_CURLY_BRAKET = 125
-PERCENTAGE = 37
-POINT = 46
-PLUS = 43
-MINUS = 45
-KEYWORD_REFERENCE = 82
-CHARACTER_X = 120
+PDFName = namedtuple("PDFName", ["value"])
+PDFKeyword = namedtuple("PDFKeyword", ["value"])
 
-DELIMITERS = {
-    OPEN_PARENTHESIS, CLOSE_PARENTHESIS, OPEN_ANGLE_BRACKET, CLOSE_ANGLE_BRACKET,
-    OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, FORWARD_SLASH, PERCENTAGE,
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET
-}
 
-SINGLETONS = {
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, KEYWORD_REFERENCE
-}
+class PDFHexString:
 
-KEYWORDS = [
-    b"trailer", b"xref", b"null", b"startxref", b"endstream", b"n", b"f" # the order is important here!
-]
+    def __init__(self, hexstr):
+        self.__hexstr = hexstr
+        if len(self.__hexstr) % 2 == 1:
+            self.__hexstr.extend(48)
+    
+    
+    def __str__(self):
+        return self.__hexstr.decode('ascii')
 
-Lexeme = namedtuple("Lexeme", ["type", "value"])
 
-is_digit = lambda x : x >= 48 and x < 58
-is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71) or (x >= 97 and x < 103)
-
-STRING_ESCAPE_SEQUENCES = {"n" : "\n", "r" : "\r", "b" : "\b", "t" : "\t", "f" : "\f"}
+    def to_bytes(self):    
+        decimalSequence = [(x - 48) if x < 58 else ((x - 55) if x < 71 else (x - 87)) for x in self.__hexstr]
+        bytesRepr = bytes(((self.__hexstr[i] << 4) + self.__hexstr[i+1] for i in range(0, len(self.__hexstr) - 1, 2)))
+        return bytesRepr
 
 
 # lets define lexeme types
@@ -94,6 +81,7 @@ LEXEME_DICT_CLOSE = 8
 LEXEME_STREAM = 9
 LEXEME_OBJ_OPEN = 11
 LEXEME_OBJ_CLOSE = 12
+
 
 
 
@@ -143,7 +131,7 @@ class Seekable:
 
 class Lexer:
 
-    def __init__(self, source : 'Seekable', contextSize = 200):
+    def __init__(self, source, contextSize = 200):
         """
         Creates a new instance of a PDF lexical analyzer associated to the given character 
         stream source.
@@ -155,11 +143,14 @@ class Lexer:
             read, tell and seek protocol typical of a file handle.
         
         """
-        self.__source = source
-        cpos = source.tell()
-        source.seek(0, 2)
-        self.__length = source.tell()
-        source.seek(cpos, 0)
+        if isinstance(source, bytes) or isinstance(source, bytearray):
+            self.__source = Seekable(source)
+        else:
+            self.__source = source
+        cpos = self.__source.tell()
+        self.__source.seek(0, 2)
+        self.__length = self.__source.tell()
+        self.__source.seek(cpos, 0)
         self.__current = self.__source.read(1)[0]
         self.__lexemesBuffer = list()
         self.__movesHistory = list()
@@ -199,8 +190,14 @@ class Lexer:
     
     def __raise_lexer_error(self, msg):
         """
-        Called when a lexical error is encountered during the input tokenization.
-        In general, a lexical error is given by an unrecognised characters sequence.
+        Called when a lexical error is encountered during the input tokenization,
+        for example when an unrecognised character is found.
+
+        Description:
+        ------------
+        This function collects also the input sequence around the position where the error
+        happened, enriching the original error message given as input, so that the exception
+        carries a more informative error message for the user.
 
         Parameters:
         -----------
@@ -212,12 +209,18 @@ class Lexer:
         PDFLexicalError
         """
         # collect the context in which the error occurred
-        oldPos = self.__source.tell()
-        currentPos = max(oldPos -  self.__contextSize // 2, 0)
-        self.__source.seek(currentPos, 0)
+        errorPosition = self.__source.tell()
+        contextSideSize = self.__contextSize // 2
+        contextStart = errorPosition - contextSideSize
+        if contextStart < 0:
+            contextSideSize = contextSideSize + contextStart
+            contextStart = 0
+        self.__source.seek(contextStart, 0)
         context = self.__source.read(self.__contextSize)
-        self.__source.seek(oldPos, 0)
-        finalMsg = "{}\n\nContext:\n\t{}\n\t{}^".format(msg, context, " "*(self.__contextSize//2-2))
+        if isinstance(context, memoryview):
+            context = bytes(context)
+        self.__source.seek(errorPosition, 0)
+        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*(contextSideSize + 1))
         raise PDFLexicalError(finalMsg)
 
 
@@ -315,9 +318,9 @@ class Lexer:
                 self.__advance()
             buffer.pop()
             try:
-                return Lexeme(LEXEME_STRING_LITERAL, buffer.decode(encoding='utf-8'))
+                return buffer.decode(encoding='utf-8')
             except UnicodeDecodeError:
-                return Lexeme(LEXEME_STRING_LITERAL, buffer.decode(encoding='cp1252'))
+                return buffer.decode(encoding='cp1252')
         else:
             # Hexadecimal string
             self.__advance()
@@ -333,13 +336,8 @@ class Lexer:
             if self.__current != CLOSE_ANGLE_BRACKET:
                 self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
             self.__advance()
-            if len(buffer) % 2 == 1:
-                buffer.extend(48)
-            newBuffer = bytearray()
-            buffer = [(x - 48) if x < 58 else ((x - 55) if x < 71 else (x - 87)) for x in buffer]
-            newBuffer = bytes([(buffer[i] << 4) + buffer[i+1] for i in range(0, len(buffer) - 1, 2)])
-            return Lexeme(LEXEME_STRING_HEXADECIMAL, newBuffer)
-
+            return PDFHexString(buffer)
+            
 
     def __parse_name(self):
         buffer = bytearray()
@@ -353,6 +351,9 @@ class Lexer:
 
 
     def __parse_number(self):
+        """
+        Parse an integer or real value from the input stream.
+        """
         buff = bytearray()
         if self.__current == PLUS or self.__current == MINUS:
             buff.append(self.__current)
@@ -366,13 +367,13 @@ class Lexer:
             buff.append(POINT)
             self.__advance()
         else:
-            return Lexeme(LEXEME_NUMBER, int(buff.decode('utf-8')))
+            return int(buff.decode('utf-8'))
         
         while is_digit(self.__current):
             buff.append(self.__current)
             self.__advance()
 
-        return Lexeme(LEXEME_NUMBER, float(buff.decode('utf-8')))
+        return float(buff.decode('utf-8'))
 
     
     def __parse_litteral(self, lit):
@@ -406,6 +407,10 @@ class Lexer:
         self.__currentLexeme = current
 
 
+    def __iter__(self):
+        return self
+    
+
     def __next__(self):
 
         if len(self.__lexemesBuffer) > 0:
@@ -422,9 +427,9 @@ class Lexer:
         elif is_digit(self.__current) or self.__current in [PLUS, MINUS, POINT]:
             self.__currentLexeme = self.__parse_number() 
         elif self.__parse_litteral(b"true"):
-            self.__currentLexeme = Lexeme(LEXEME_BOOLEAN, True)
+            self.__currentLexeme = True
         elif self.__parse_litteral(b"false"):
-            self.__currentLexeme = Lexeme(LEXEME_BOOLEAN, False)
+            self.__currentLexeme = False
         elif self.__current == OPEN_ANGLE_BRACKET and self.__peek() == OPEN_ANGLE_BRACKET:
             self.__advance()
             self.__advance()

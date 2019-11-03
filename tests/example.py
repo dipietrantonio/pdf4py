@@ -10,6 +10,7 @@ if __name__ == "__main__":
         print("Usage: {} <pdf>".format(sys.argv[0]))
     
     #logging.basicConfig(level=logging.DEBUG)
+    #logging.basicConfig(level=logging.DEBUG)
     P = PDFParser(sys.argv[1])
     for i, x in enumerate(P.xrefTable.active_keys()):
         #print("Key: ", x)

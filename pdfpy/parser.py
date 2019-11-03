@@ -26,9 +26,8 @@ SOFTWARE.
 import logging
 from collections import namedtuple
 from functools import partial
-from .lexer import *
-from .decoders import decode
-
+from ._lexer import *
+from ._decoders import decode
 
 
 class PDFSyntaxError(Exception):
