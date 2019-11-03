@@ -25,6 +25,8 @@ SOFTWARE.
 BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}
 LINE_FEED = ord('\n')
 HORIZONTAL_TAB = ord('\t')
+FORM_FEED = ord('\f')
+BACKSPACE = ord('\b')
 CARRIAGE_RETURN = ord('\r')
 OPEN_PARENTHESIS = ord('(')
 CLOSE_PARENTHESIS = ord(')')
@@ -64,4 +66,9 @@ KEYWORDS = [
 is_digit = lambda x : x >= 48 and x < 58
 is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71) or (x >= 97 and x < 103)
 
-STRING_ESCAPE_SEQUENCES = {ord("n") : LINE_FEED, ord("r") : CARRIAGE_RETURN, ord("b") : "\b", ord("t") : HORIZONTAL_TAB, ord("f") : "\f"}
+STRING_ESCAPE_SEQUENCES = {
+    ord("n") : LINE_FEED,
+    ord("r") : CARRIAGE_RETURN,
+    ord("b") : BACKSPACE,
+    ord("t") : HORIZONTAL_TAB,
+    ord("f") : FORM_FEED}

@@ -219,8 +219,10 @@ class Lexer:
         context = self.__source.read(self.__contextSize)
         if isinstance(context, memoryview):
             context = bytes(context)
+        # escaped occurrences occupy 2 spaces instead of one, when printed as bytes.
+        escapedOccurrences = sum(context[:contextSideSize].count(x) for x in STRING_ESCAPE_SEQUENCES.values())
         self.__source.seek(errorPosition, 0)
-        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*(contextSideSize + 1))
+        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*(contextSideSize + escapedOccurrences + 1))
         raise PDFLexicalError(finalMsg)
 
 
