@@ -25,6 +25,7 @@ SOFTWARE.
 
 from collections import namedtuple
 import logging
+from binascii import unhexlify
 from ._charset import *
 
 
@@ -48,24 +49,7 @@ class PDFLexicalError(Exception):
 
 PDFName = namedtuple("PDFName", ["value"])
 PDFKeyword = namedtuple("PDFKeyword", ["value"])
-
-
-class PDFHexString:
-
-    def __init__(self, hexstr):
-        self.__hexstr = hexstr
-        if len(self.__hexstr) % 2 == 1:
-            self.__hexstr.extend(48)
-    
-    
-    def __str__(self):
-        return self.__hexstr.decode('ascii')
-
-
-    def to_bytes(self):    
-        decimalSequence = [(x - 48) if x < 58 else ((x - 55) if x < 71 else (x - 87)) for x in self.__hexstr]
-        bytesRepr = bytes(((self.__hexstr[i] << 4) + self.__hexstr[i+1] for i in range(0, len(self.__hexstr) - 1, 2)))
-        return bytesRepr
+PDFHexString = namedtuple("PDFHexString", ["value"])
 
 
 # lets define lexeme types
@@ -300,13 +284,15 @@ class Lexer:
             elif self.__current == CLOSE_PARENTHESIS:
                 openParentheses -= 1
             elif self.__current == BACK_SLASH:
-                # parse special content
+                # parse special content (escaped sequence)
                 self.__advance()
                 if not is_digit(self.__current):
+                    # then it must be one of the blanks like: \n, \r, \t etc..
                     buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__current, self.__current))
                     self.__advance()
                     continue
                 else:
+                    # otherwise it is an octal number
                     digits = bytearray()
                     while is_digit(self.__current) and len(digits) < 3:
                         digits.append(self.__current)
@@ -317,6 +303,7 @@ class Lexer:
             buffer.append(self.__current)
             self.__advance()
         buffer.pop()
+
         try:
             return buffer.decode(encoding='utf-8')
         except UnicodeDecodeError:

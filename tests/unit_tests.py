@@ -1,6 +1,6 @@
 import unittest
 from context import *
-
+from binascii import unhexlify
 
 # array of pdf sentences used to test the Lexer class
 pdfParts = [
@@ -22,7 +22,7 @@ pdfParts = [
     rb"(\a backslash is ignored)",  
     rb"(This string contains \245two octal characters\307.)", # test octal strings
     rb"(\0053) (\053) (\53)", # test octal strings 2
-    
+    rb"<4 E6F762073686D 6F7A206B6120706F702E>", # hex string
 ]
 
 
@@ -105,8 +105,14 @@ class LexerUnitTest(unittest.TestCase):
         self.assertEqual('\0053', next(lex))
         self.assertEqual(next(lex), next(lex))
         
+    
+    def test_parse_hex_string(self):
         
-        
+        lex = lexpkg.Lexer(pdfParts[11])
+        item = next(lex)
+        self.assertIsInstance(item, lexpkg.PDFHexString)
+        self.assertEqual(unhexlify(b"4E6F762073686D6F7A206B6120706F702E"), unhexlify(item.value))
+ 
 if __name__ == "__main__":
     unittest.main()
 
