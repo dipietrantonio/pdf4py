@@ -377,7 +377,7 @@ class Lexer:
     def __match_keyword(self):
         for k in KEYWORDS:
             if self.__parse_literal(k):
-                self.__current = PDFKeyword(k)
+                self.__currentLexeme = PDFKeyword(k)
                 return True
         else:
             return False
@@ -474,7 +474,7 @@ class Lexer:
             pass
         
         elif self.__current in SINGLETONS:
-            self.__currentLexeme = PDFSingleton(chr(self.__current))
+            self.__currentLexeme = PDFSingleton(self.__current)
             self.__advance()
         else:
             # If the input bytes sequence prefix doesn't match anything known, then...

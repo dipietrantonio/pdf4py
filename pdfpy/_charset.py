@@ -53,7 +53,7 @@ NUMBER_SIGN = ord('#')
 # singletons are lexemes composed by only one character.
 SINGLETONS = {
     OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, INUSE_ENTRY_KEYWORD,
-    FREE_ENTRY_KEYWORD
+    FREE_ENTRY_KEYWORD, KEYWORD_REFERENCE
 }
 
 # the order is important here! For example, you don't want "n" to comes before "null", otherwise the

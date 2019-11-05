@@ -135,8 +135,21 @@ class LexerUnitTest(unittest.TestCase):
             tok = next(lex)
             self.assertIsInstance(tok, lexpkg.PDFName)
             self.assertEqual(tok.value, validNames[x])
+    
 
+    def test_parse_keywords(self):
+        istream = b"R n null n false f << endobj obj >> trailer xref startxref { } [ ]"
+        checkVals = [lexpkg.KEYWORD_REFERENCE, lexpkg.INUSE_ENTRY_KEYWORD, b"null", 
+            lexpkg.INUSE_ENTRY_KEYWORD, False, lexpkg.FREE_ENTRY_KEYWORD, b"<<",
+            b"endobj", b"obj", b">>", b"trailer", b"xref", b"startxref", 
+            lexpkg.OPEN_CURLY_BRACKET, lexpkg.CLOSE_CURLY_BRAKET,
+            lexpkg.OPEN_SQUARE_BRACKET, lexpkg.CLOSE_SQUARE_BRACKET]
         
+        lex = lexpkg.Lexer(istream)     
+        self.assertEqual([x if isinstance(x, bool) else x.value for x in list(lex)], checkVals)
+
+
+
 if __name__ == "__main__":
     unittest.main()
 
