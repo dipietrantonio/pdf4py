@@ -22,7 +22,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}
+
+# Defines a constant for each relevant character
 LINE_FEED = ord('\n')
 HORIZONTAL_TAB = ord('\t')
 FORM_FEED = ord('\f')
@@ -43,23 +44,22 @@ POINT = ord('.')
 PLUS = ord('+')
 MINUS = ord('-')
 KEYWORD_REFERENCE = ord('R')
+FREE_ENTRY_KEYWORD = ord('f')
+INUSE_ENTRY_KEYWORD = ord('n')
 CHARACTER_X = ord('x')
 NUMBER_SIGN = ord('#')
 
-DELIMITERS = {
-    OPEN_PARENTHESIS, CLOSE_PARENTHESIS, OPEN_ANGLE_BRACKET, CLOSE_ANGLE_BRACKET,
-    OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, FORWARD_SLASH, PERCENTAGE,
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET
-}
 
-
+# singletons are lexemes composed by only one character.
 SINGLETONS = {
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, KEYWORD_REFERENCE
+    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, INUSE_ENTRY_KEYWORD,
+    FREE_ENTRY_KEYWORD
 }
 
-
+# the order is important here! For example, you don't want "n" to comes before "null", otherwise the
+# latter will never be matched.
 KEYWORDS = [
-    b"trailer", b"xref", b"null", b"startxref", b"endstream", b"n", b"f" # the order is important here!
+   b"<<", b">>", b"endobj", b"obj", b"trailer", b"xref", b"null", b"startxref", b"endstream"
 ]
 
 
@@ -83,4 +83,8 @@ STRING_ESCAPE_SEQUENCES = {
     ord("r") : CARRIAGE_RETURN,
     ord("b") : BACKSPACE,
     ord("t") : HORIZONTAL_TAB,
-    ord("f") : FORM_FEED}
+    ord("f") : FORM_FEED
+}
+
+
+BLANKS = {0x00, 0x09, 0x0A, 0x0C, 0x0D, 0x20}

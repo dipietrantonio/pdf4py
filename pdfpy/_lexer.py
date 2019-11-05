@@ -30,12 +30,6 @@ from ._charset import *
 
 
 
-class LexerError(Exception):
-    """
-    LexerError
-    """
-
-
 class PDFLexicalError(Exception):
     """
     Lexical error
@@ -50,23 +44,7 @@ class PDFLexicalError(Exception):
 PDFName = namedtuple("PDFName", ["value"])
 PDFKeyword = namedtuple("PDFKeyword", ["value"])
 PDFHexString = namedtuple("PDFHexString", ["value"])
-
-
-# lets define lexeme types
-LEXEME_STRING_LITERAL = 0
-LEXEME_STRING_HEXADECIMAL = 1
-LEXEME_NAME = 2
-LEXEME_NUMBER = 3
-LEXEME_KEYWORD = 4
-LEXEME_SINGLETON = 5
-LEXEME_BOOLEAN = 6
-LEXEME_DICT_OPEN = 7
-LEXEME_DICT_CLOSE = 8
-LEXEME_STREAM = 9
-LEXEME_OBJ_OPEN = 11
-LEXEME_OBJ_CLOSE = 12
-
-
+PDFSingleton = namedtuple("PDFSingleton", ["value"])
 
 
 class Seekable:
@@ -380,7 +358,7 @@ class Lexer:
         return float(buff.decode('utf-8'))
 
     
-    def __parse_litteral(self, lit):
+    def __parse_literal(self, lit):
         diff = False
         for i, l in enumerate(lit):
             p = self.__peek(i)
@@ -398,8 +376,9 @@ class Lexer:
 
     def __match_keyword(self):
         for k in KEYWORDS:
-            if self.__parse_litteral(k):
-                return Lexeme(LEXEME_KEYWORD, k)
+            if self.__parse_literal(k):
+                self.__current = PDFKeyword(k)
+                return True
         else:
             return False
 
@@ -410,10 +389,38 @@ class Lexer:
 
 
     def __iter__(self):
+        """
+        Makes a Lexer Analyzer instance an iterable object.
+
+        Usually this is a bad idea, but here can be ok.
+        """
         return self
     
 
     def __next__(self):
+        """
+        Returns the next lexeme in the input bytes sequence. Also, set current_lexeme property 
+        to the returned value.
+
+        Description
+        -----------
+        The Lexical Analyzer is an iterator over the sequence of lexemes present in the input
+        bytes sequence. For this reason the user can use the built-in `next` function to get
+        the next lexeme in the sequence. When the end of the bytes sequence is reached,
+        StopIteration is raised.
+
+
+        Returns:
+        --------
+        An object that can be instance of: str, int, float, bool, PDFName, PDFKeyword,
+        PDFHexString, PDFSingleton #TODO complete here
+
+
+        Raises:
+        -------
+        StopIteration on End-Of-Sequence, PDFLexicalError when an unexpected input byte is
+        encountered.
+        """
 
         if len(self.__lexemesBuffer) > 0:
             self.__currentLexeme = self.__lexemesBuffer.pop()
@@ -423,33 +430,30 @@ class Lexer:
         # now try to parse lexical entities
         if self.__current == OPEN_PARENTHESIS:
             self.__currentLexeme = self.__parse_string_literal()
+    
         elif self.__current == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET:
+            # If the next bytes had been another OPEN_ANGLE_BRACKET then we would have gotten
+            # a "dictionary starts here" mark 
             self.__currentLexeme = self.__parse_hexadecimal_string()
+
         elif self.__current == FORWARD_SLASH:
             self.__currentLexeme = self.__parse_name()
+        
         elif is_digit(self.__current) or self.__current in [PLUS, MINUS, POINT]:
-            self.__currentLexeme = self.__parse_number() 
-        elif self.__parse_litteral(b"true"):
+            self.__currentLexeme = self.__parse_number()
+
+        elif self.__parse_literal(b"true"):
             self.__currentLexeme = True
-        elif self.__parse_litteral(b"false"):
+        
+        elif self.__parse_literal(b"false"):
             self.__currentLexeme = False
-        elif self.__current == OPEN_ANGLE_BRACKET and self.__peek() == OPEN_ANGLE_BRACKET:
-            self.__advance()
-            self.__advance()
-            self.__currentLexeme = Lexeme(LEXEME_DICT_OPEN, b"<<")
-        elif self.__current == CLOSE_ANGLE_BRACKET and self.__peek() == CLOSE_ANGLE_BRACKET:
-            self.__advance()
-            self.__advance()
-            self.__currentLexeme = Lexeme(LEXEME_DICT_CLOSE, b">>")        
-        elif self.__current in SINGLETONS:
-            self.__currentLexeme = Lexeme(LEXEME_SINGLETON, bytearray((self.__current,)).decode('ascii'))
-            self.__advance()
-        elif self.__parse_litteral(b"stream"):
+        
+        elif self.__parse_literal(b"stream"):
             # check whether there are the optional \r\n
             if self.__current == CARRIAGE_RETURN:
                 self.__advance()
                 if self.__current != LINE_FEED:
-                     raise LexerError("Carriage return not followed by a line feed after 'stream' keyword.")
+                    self.__raise_lexer_error("Carriage return not followed by a line feed after 'stream' keyword.")
             
             streamPos = self.__source.tell()
             # build a closure to read the stream later
@@ -463,18 +467,17 @@ class Lexer:
                     self.__advance()
                 self.__source.seek(oldPos, 0)
                 return data
-                
-            self.__currentLexeme = Lexeme(LEXEME_STREAM, read_stream)
+            self.__currentLexeme = read_stream
+
+        elif self.__match_keyword():
+            # self.__currentLexeme is set inside the called function
+            pass
         
-        elif self.__parse_litteral(b"obj"):
-            self.__currentLexeme = Lexeme(LEXEME_OBJ_OPEN, b"obj")
-        
-        elif self.__parse_litteral(b"endobj"):
-            self.__currentLexeme = Lexeme(LEXEME_OBJ_CLOSE, b"endobj")
+        elif self.__current in SINGLETONS:
+            self.__currentLexeme = PDFSingleton(chr(self.__current))
+            self.__advance()
         else:
-            match = self.__match_keyword()
-            if match == False:
-                raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
-            else:
-                self.__currentLexeme = match
+            # If the input bytes sequence prefix doesn't match anything known, then...
+            raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
+
         return self.__currentLexeme
