@@ -311,7 +311,9 @@ class Lexer:
     
 
     def __parse_hexadecimal_string(self):
-        # Hexadecimal string
+        """
+        Parse a hexadecimal digits sequence
+        """
         self.__advance()
         buffer = bytearray()
         while True:
@@ -330,14 +332,26 @@ class Lexer:
             
 
     def __parse_name(self):
+        """
+        Parse a PDF name token.
+        """
         buffer = bytearray()
         self.__advance()
-        while not(self.__current in BLANKS or self.__current in DELIMITERS):
-            buffer.append(self.__current)
+        while ord('!') <= self.__current and self.__current <= ord('~'):
+            if self.__current == NUMBER_SIGN:
+                self.__advance()
+                try:
+                    hexDigit1 = hex_to_number(self.__current)
+                    self.__advance()
+                    hexDigit2 = hex_to_number(self.__current)
+                    hexNum = (hexDigit1 << 4) + hexDigit2
+                    buffer.append(hexNum)
+                except ValueError:
+                    self.__raise_lexer_error("'{}' is not an hexadecimal digit.".format(self.__current))
+            else:
+                buffer.append(self.__current)
             self.__advance()
-        if len(buffer) == 0:
-            buffer.append(FORWARD_SLASH)
-        return Lexeme(LEXEME_NAME, buffer.decode('ascii'))
+        return PDFName(buffer.decode('ascii'))
 
 
     def __parse_number(self):
@@ -383,9 +397,7 @@ class Lexer:
 
 
     def __match_keyword(self):
-        logging.debug("Lexer: starting matching keywords..")
         for k in KEYWORDS:
-            logging.debug("Lexer: trying to match keyword '{}' - current position: '{}'".format(k, chr(self.__current)))
             if self.__parse_litteral(k):
                 return Lexeme(LEXEME_KEYWORD, k)
         else:

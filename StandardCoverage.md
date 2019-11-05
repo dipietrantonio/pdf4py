@@ -16,8 +16,8 @@ Nothing to implement here, just introductory stuff.
 | 7.3               | Objects             | Work in progress |
 | 7.3.2             | Boolean objects     | ✓                |
 | 7.3.3             | Numeric objects     | ✓                |
-| 7.3.4             | String objects      | ✓         |
-| 7.3.5             | Name objects        | Testing          |
+| 7.3.4             | String objects      | ✓                |
+| 7.3.5             | Name objects        | ✓                |
 | 7.3.6             | Array objects       | Refactoring      |
 | 7.3.7             | Dictionary objects  | Refactoring      |
 | 7.3.8             | Stream objects      | Refactoring      |

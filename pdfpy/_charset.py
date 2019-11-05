@@ -44,7 +44,7 @@ PLUS = ord('+')
 MINUS = ord('-')
 KEYWORD_REFERENCE = ord('R')
 CHARACTER_X = ord('x')
-
+NUMBER_SIGN = ord('#')
 
 DELIMITERS = {
     OPEN_PARENTHESIS, CLOSE_PARENTHESIS, OPEN_ANGLE_BRACKET, CLOSE_ANGLE_BRACKET,
@@ -65,6 +65,18 @@ KEYWORDS = [
 
 is_digit = lambda x : x >= 48 and x < 58
 is_hex_digit = lambda x: (x >= 48 and x < 58) or (x >= 65 and x < 71) or (x >= 97 and x < 103)
+
+
+def hex_to_number(x):
+    if x >= 48 and x < 58:
+        return x - 48
+    elif x >= 65 and x < 71:
+        return x - 55
+    elif x >= 97 and x < 103:
+        return x - 87
+    else:
+        raise ValueError("'{}' is not a hexadecimal string.".format(chr(x)))
+
 
 STRING_ESCAPE_SEQUENCES = {
     ord("n") : LINE_FEED,

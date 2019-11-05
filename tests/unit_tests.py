@@ -26,6 +26,21 @@ pdfParts = [
 ]
 
 
+validNames = {
+    b"/Name1" :  "Name1",
+    b"/ASomewhatLongerName" : "ASomewhatLongerName",
+    b"/A;Name_With-Various***Characters?" : "A;Name_With-Various***Characters?",
+    b"/1.2" : "1.2",
+    b"/$$" : "$$",
+    b"/@pattern" : "@pattern",
+    b"/.notdef" : ".notdef",
+    b"/Lime#20Green" : "Lime Green",
+    b"/paired#28#29parentheses" : "paired()parentheses",
+    b"/The_Key_of_F#23_Minor" : "The_Key_of_F#_Minor",
+    b"/A#42" : "AB",
+    b"/ " : ""
+}
+
 
 class LexerUnitTest(unittest.TestCase):
     """
@@ -113,6 +128,15 @@ class LexerUnitTest(unittest.TestCase):
         self.assertIsInstance(item, lexpkg.PDFHexString)
         self.assertEqual(unhexlify(b"4E6F762073686D6F7A206B6120706F702E"), unhexlify(item.value))
  
+
+    def test_parse_name(self):
+        for x in validNames:
+            lex = lexpkg.Lexer(x)
+            tok = next(lex)
+            self.assertIsInstance(tok, lexpkg.PDFName)
+            self.assertEqual(tok.value, validNames[x])
+
+        
 if __name__ == "__main__":
     unittest.main()
 
