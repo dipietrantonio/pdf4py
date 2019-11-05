@@ -290,55 +290,56 @@ class Lexer:
             return v[0]
     
 
-    def __parse_string(self):
-        if self.__current == OPEN_PARENTHESIS:
-            # This is the case where we parse string literals
-            self.__advance()
-            openParentheses = 1
-            buffer = bytearray()
-            while openParentheses > 0:
-                if self.__current == OPEN_PARENTHESIS:
-                    openParentheses += 1
-                elif self.__current == CLOSE_PARENTHESIS:
-                    openParentheses -= 1
-                elif self.__current == BACK_SLASH:
-                    # parse special content
-                    self.__advance()
-                    if not is_digit(self.__current):
-                        buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__current, self.__current))
-                        self.__advance()
-                        continue
-                    else:
-                        digits = bytearray()
-                        while is_digit(self.__current) and len(digits) < 3:
-                            digits.append(self.__current)
-                            self.__advance()
-                        charCode = sum(int(x) << 3*(len(digits) -i - 1) for i, x in enumerate(digits.decode('ascii')))
-                        buffer.append(charCode)
-                        continue
-                buffer.append(self.__current)
+    def __parse_string_literal(self):
+        self.__advance()
+        openParentheses = 1
+        buffer = bytearray()
+        while openParentheses > 0:
+            if self.__current == OPEN_PARENTHESIS:
+                openParentheses += 1
+            elif self.__current == CLOSE_PARENTHESIS:
+                openParentheses -= 1
+            elif self.__current == BACK_SLASH:
+                # parse special content
                 self.__advance()
-            buffer.pop()
-            try:
-                return buffer.decode(encoding='utf-8')
-            except UnicodeDecodeError:
-                return buffer.decode(encoding='cp1252')
-        else:
-            # Hexadecimal string
-            self.__advance()
-            buffer = bytearray()
-            while True:
-                if self.__current in BLANKS:
+                if not is_digit(self.__current):
+                    buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__current, self.__current))
                     self.__advance()
                     continue
-                if not is_hex_digit(self.__current):
-                    break
-                buffer.append(self.__current)
-                self.__advance()
-            if self.__current != CLOSE_ANGLE_BRACKET:
-                self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
+                else:
+                    digits = bytearray()
+                    while is_digit(self.__current) and len(digits) < 3:
+                        digits.append(self.__current)
+                        self.__advance()
+                    charCode = sum(int(x) << 3*(len(digits) -i - 1) for i, x in enumerate(digits.decode('ascii')))
+                    buffer.append(charCode)
+                    continue
+            buffer.append(self.__current)
             self.__advance()
-            return PDFHexString(buffer)
+        buffer.pop()
+        try:
+            return buffer.decode(encoding='utf-8')
+        except UnicodeDecodeError:
+            return buffer.decode(encoding='cp1252')
+    
+
+    def __parse_hexadecimal_string(self):
+        # Hexadecimal string
+        self.__advance()
+        buffer = bytearray()
+        while True:
+            if self.__current in BLANKS:
+                self.__advance()
+                continue
+            if not is_hex_digit(self.__current):
+                break
+            buffer.append(self.__current)
+            self.__advance()
+        if self.__current != CLOSE_ANGLE_BRACKET:
+            self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
+        self.__advance()
+        return PDFHexString(buffer)
+
             
 
     def __parse_name(self):
@@ -421,9 +422,10 @@ class Lexer:
 
         self.__remove_blanks()
         # now try to parse lexical entities
-        if self.__current == OPEN_PARENTHESIS or (
-                self.__current == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET):
-            self.__currentLexeme = self.__parse_string()
+        if self.__current == OPEN_PARENTHESIS:
+            self.__currentLexeme = self.__parse_string_literal()
+        elif self.__current == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET:
+            self.__currentLexeme = self.__parse_hexadecimal_string()
         elif self.__current == FORWARD_SLASH:
             self.__currentLexeme = self.__parse_name()
         elif is_digit(self.__current) or self.__current in [PLUS, MINUS, POINT]:
