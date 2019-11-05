@@ -33,7 +33,7 @@ class LexerUnitTest(unittest.TestCase):
     """
 
     def test_lexer_creation(self):
-        with open("tests/pdfs/0000.pdf", "rb") as fp:
+        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             lex = lexpkg.Lexer(fp)
             self.assertIs(lex.current_lexeme, None)
 
