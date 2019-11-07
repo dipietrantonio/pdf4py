@@ -60,4 +60,4 @@ Not supported
 
 ## Chapter 13 - Multimedia features
 
-Not supporte
+Not supported

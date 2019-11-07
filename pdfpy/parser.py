@@ -108,13 +108,7 @@ class PDFParser:
 
 
     def __init__(self, obj):
-        if isinstance(obj, str):
-            self.__handle = open(obj, "rb")
-        elif isinstance(obj, bytes) or isinstance(obj, bytearray):
-            self.__handle = Seekable(obj)
-        else:
-            raise ValueError("PDFParser currently cannot parse from sources of type '{}'.".format(type(obj)))
-        self.__lexer = Lexer(self.__handle)
+        self.__lexer = Lexer(obj)
         self.__parse_xref()
        
 
@@ -159,10 +153,10 @@ class PDFParser:
 
     def __parse_xref(self):
         # fist, find xrefstart, starting from end of file
-        xrefstartPos = self.__lexer.seekable_rfind(b"startxref")
+        xrefstartPos = self.__lexer.rfind(b"startxref")
         if xrefstartPos < 0:
             raise PDFSyntaxError("'startxref' keyword not found.")
-        xrefPos = next(self.__lexer).value
+        xrefPos = next(self.__lexer)
         xrefs = []
         while xrefPos >= 0: # while there are xref to process
             currentLexeme = self.__lexer.move_at_position(xrefPos)
