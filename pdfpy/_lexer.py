@@ -48,10 +48,13 @@ PDFSingleton = namedtuple("PDFSingleton", ["value"])
 
 
 class Seekable:
+    """
+    Wrapper class to give a seek/tell/read interface to bytes and bytearray objects.
+    """
 
     def __init__(self, obj):
         if not(isinstance(obj, bytes) or isinstance(obj, bytearray)):
-            raise ValueError("'obj' must be 'bytes' or 'bytearray' type.")
+            raise ValueError("'obj' must be of type 'bytes' or 'bytearray'.")
         self.__source = memoryview(obj)
         self.__pos = 0
         self.__len = len(obj)
@@ -151,14 +154,14 @@ class Lexer:
         Searches a sequence of bytes starting from the end of the input bytes sequence.
 
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         keyword : bytes
             The sequence of bytes to search for.
         
 
-        Returns:
-        --------
+        Returns
+        -------
         The starting position of the sequence if found, `-1` otherwise.
         """
         revKeyword = bytes(reversed(keyword))

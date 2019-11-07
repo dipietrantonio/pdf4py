@@ -150,6 +150,35 @@ class LexerUnitTest(unittest.TestCase):
 
 
 
+class SeekableTestCase(unittest.TestCase):
+
+
+    def test_seekable_class(self):
+        aSequenceOfBytes = b"This is a sequence of bytes."
+
+        # Tests that Seekable does not accept wrong objects.
+        with self.assertRaises(ValueError):
+            lexpkg.Seekable(5)
+        
+        # Now creates a valid Seekable instance.
+        sk = lexpkg.Seekable(aSequenceOfBytes)
+        # moves at the end of the stream
+        sk.seek(0, 2)
+        # gets the size of the stream
+        self.assertEqual(sk.tell(), len(aSequenceOfBytes))
+        # now moves to position 3
+        sk.seek(3, 0)
+        v = sk.read(1)
+        self.assertIsInstance(v, list)
+        self.assertEqual(len(v), 1)
+        self.assertEqual(v[0], aSequenceOfBytes[3])
+        # makes a read bigger than the available bytes
+        sk.seek(-3, 2)
+        v = sk.read(4)
+        self.assertEqual(v, aSequenceOfBytes[-3:])
+
+
+
 if __name__ == "__main__":
     unittest.main()
 
