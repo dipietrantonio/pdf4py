@@ -92,19 +92,34 @@ class Seekable:
 
 
 class Lexer:
+    """
+    A lexical analyzer, in short lexer, is a software that takes as input a sequence of characters 
+    and transforms it in a sequence of meaningful atomic language symbols, called lexemes, defined 
+    in the associated language grammar. In our case, the input is a sequence of bytes read from a 
+    file and the output is a sequence composed by simple PDF objects, such as strings, names, 
+    numbers, booleans, and other symbols that are used to define more complex objects, namely 
+    dictionaries, arrays and streams.
+
+    The Lexer class implements the __next__ and __iter__ dunder methods to iterate over the lexemes 
+    that are present in the input bytes sequence. It also give to the user methods to move around
+    the input sequence to allow lazy parsing (i.e. to parse only the required lexemes). 
+    """
 
     def __init__(self, source, contextSize = 200):
         """
-        Creates a new instance of a PDF lexical analyzer associated to the given character 
-        stream source.
+        Creates a new instance of a PDF lexical analyzer associated to the given source sequence of
+        bytes.
+
 
         Parameters:
         -----------
-        source : TextIOWrapper or Seekable object.
-            The source from where characters are read. The object must implement the 
-            read, tell and seek protocol typical of a file handle.
+        source : (read/tell/seek)-supporting type, bytes or bytesarray
+            The source from where bytes are read.
         
+        contextSize : int
+            The size of the context that will be collected if `get_context` is called.
         """
+
         if isinstance(source, bytes) or isinstance(source, bytearray):
             self.__source = Seekable(source)
         else:
@@ -113,7 +128,7 @@ class Lexer:
         self.__source.seek(0, 2)
         self.__length = self.__source.tell()
         self.__source.seek(cpos, 0)
-        self.__current = self.__source.read(1)[0]
+        self.__head = self.__source.read(1)[0]
         self.__lexemesBuffer = list()
         self.__movesHistory = list()
         self.__contextSize = contextSize
@@ -123,12 +138,29 @@ class Lexer:
 
     @property
     def current_lexeme(self):
+        """
+        Returns the last parsed lexeme.
+        """
         if self.__ended:
             raise StopIteration()
         return self.__currentLexeme
     
 
-    def seekable_rfind(self, keyword : 'bytes'):
+    def rfind(self, keyword : 'bytes'):
+        """
+        Searches a sequence of bytes starting from the end of the input bytes sequence.
+
+
+        Parameters:
+        -----------
+        keyword : bytes
+            The sequence of bytes to search for.
+        
+
+        Returns:
+        --------
+        The starting position of the sequence if found, `-1` otherwise.
+        """
         revKeyword = bytes(reversed(keyword))
         buff = bytearray()
         count = 1
@@ -156,9 +188,14 @@ class Lexer:
 
         Description
         -----------
-        Given a context size of `C` bytes, and the current head position `P`, the 
-        function returns the bytes sequence starting from the byte at position
-        `max(P - C // 2, 0)` whose length is at most `C`.
+        Given a context size of `C` bytes, and the current head position `P`, the function returns the 
+        bytes sequence starting from the byte at position `max(P - C // 2, 0)` whose length is at most
+        `C`.
+
+
+        Returns:
+        --------
+        A bytes sequence representing the content around the Lexer's head position.
         """
         # collect the context in which the error occurred
         # collect the context in which the error occurred
@@ -181,14 +218,14 @@ class Lexer:
         
     def __raise_lexer_error(self, msg):
         """
-        Called when a lexical error is encountered during the input tokenization,
-        for example when an unrecognised character is found.
+        Called when a lexical error is encountered during the input tokenization, for example when an
+        unrecognised character is found.
 
         Description:
         ------------
-        This function collects also the input sequence around the position where the error
-        happened, enriching the original error message given as input, so that the exception
-        carries a more informative error message for the user.
+        This function collects also the input sequence around the position where the error happened, 
+        enriching the original error message given as input, so that the exception carries a more 
+        informative error message for the user.
 
         Parameters:
         -----------
@@ -201,11 +238,28 @@ class Lexer:
         """
         # collect the context in which the error occurred
         context, errorPosition, relativeErrorPosition = self.get_context()
-        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*relativeErrorPosition)
+        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context,
+            " "*relativeErrorPosition)
         raise PDFLexicalError(finalMsg)
 
 
     def move_at_position(self, pos):
+        """
+        Moves the Lexer's head to the new position `pos` and extracts the lexeme starting at that
+        position, Also, saves the current position and lexeme into a stack so that they can be
+        restored in future.
+
+
+        Parameters:
+        -----------
+        pos : int
+            The position where to move to.
+        
+
+        Returns:
+        --------
+        The lexeme extracted starting from position `pos`.
+        """
         previousLexeme = self.current_lexeme
         previousPosition = self.__source.tell()
         self.__movesHistory.append((previousLexeme, previousPosition))
@@ -215,6 +269,10 @@ class Lexer:
 
 
     def move_back(self):
+        """
+        Moves the Lexer's head back to the position it was before the last `move_at_position`
+        method call.
+        """
         if len(self.__movesHistory) == 0:
             raise Exception("No move in history")
         prevLex, prevPos = self.__movesHistory.pop()
@@ -224,33 +282,29 @@ class Lexer:
 
 
     def __advance(self):
+        """
+        Avance the Lexer's head to the next position.
+        """
         if self.__ended:
             raise StopIteration()
-        self.__current = self.__source.read(1)
-        if self.__current == b'':
-            self.__current = b' '[0]
+        self.__head = self.__source.read(1)
+        if self.__head == b'':
+            self.__head = b' '[0]
             self.__ended = True
         else:
-            self.__current = self.__current[0]
-        
-
-    def __read_chunk(self, size):
-        if self.__ended:
-            raise StopIteration()
-        endPos = self.__source.tell() + size
-        if endPos <= self.__length:
-            data = self.__source.read(size)
-            return data
-        else:
-            return None
+            self.__head = self.__head[0]
 
 
     def __remove_blanks(self):
+        """
+        Removes all the characters that are ignored in the PDF grammar starting from the current
+        position until the next meaningful character position.
+        """
         while True:
-            if self.__current in BLANKS:
+            if self.__head in BLANKS:
                 self.__advance()
-            elif self.__current == PERCENTAGE: # comment starts
-                while self.__current != LINE_FEED:
+            elif self.__head == PERCENTAGE: # comment starts
+                while self.__head != LINE_FEED:
                     self.__advance()
                 self.__advance()
             else:
@@ -258,6 +312,21 @@ class Lexer:
 
 
     def __peek(self, k = 1):
+        """
+        Takes a look at the byte at position currentPos + k without modifying the Lexer's head
+        position.
+
+
+        Parameters
+        ----------
+        k : int
+            Offset from the current position to the position to peek at.
+        
+
+        Returns
+        -------
+        The peeked byte
+        """
         k -= 1
         currentPos = self.__source.tell()
         if currentPos + k >= self.__length:
@@ -269,33 +338,40 @@ class Lexer:
             return v[0]
     
 
-    def __parse_string_literal(self):
+    def __extract_string_literal(self):
+        """
+        Extracts a string literal from the input bytes sequence.
+
+        Returns
+        -------
+        True if successful, False otherwise.
+        """
         self.__advance()
         openParentheses = 1
         buffer = bytearray()
         while openParentheses > 0:
-            if self.__current == OPEN_PARENTHESIS:
+            if self.__head == OPEN_PARENTHESIS:
                 openParentheses += 1
-            elif self.__current == CLOSE_PARENTHESIS:
+            elif self.__head == CLOSE_PARENTHESIS:
                 openParentheses -= 1
-            elif self.__current == BACK_SLASH:
+            elif self.__head == BACK_SLASH:
                 # parse special content (escaped sequence)
                 self.__advance()
-                if not is_digit(self.__current):
+                if not is_digit(self.__head):
                     # then it must be one of the blanks like: \n, \r, \t etc..
-                    buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__current, self.__current))
+                    buffer.append(STRING_ESCAPE_SEQUENCES.get(self.__head, self.__head))
                     self.__advance()
                     continue
                 else:
                     # otherwise it is an octal number
                     digits = bytearray()
-                    while is_digit(self.__current) and len(digits) < 3:
-                        digits.append(self.__current)
+                    while is_digit(self.__head) and len(digits) < 3:
+                        digits.append(self.__head)
                         self.__advance()
                     charCode = sum(int(x) << 3*(len(digits) -i - 1) for i, x in enumerate(digits.decode('ascii')))
                     buffer.append(charCode)
                     continue
-            buffer.append(self.__current)
+            buffer.append(self.__head)
             self.__advance()
         buffer.pop()
 
@@ -305,77 +381,105 @@ class Lexer:
             return buffer.decode(encoding='cp1252')
     
 
-    def __parse_hexadecimal_string(self):
+    def __extract_hexadecimal_string(self):
         """
-        Parse a hexadecimal digits sequence
+        Extracts a hexadecimal digits sequence fron the input bytes sequence.
+
+
+        Returns
+        -------
+        True if successful, False otherwise.
         """
         self.__advance()
         buffer = bytearray()
         while True:
-            if self.__current in BLANKS:
+            if self.__head in BLANKS:
                 self.__advance()
                 continue
-            if not is_hex_digit(self.__current):
+            if not is_hex_digit(self.__head):
                 break
-            buffer.append(self.__current)
+            buffer.append(self.__head)
             self.__advance()
-        if self.__current != CLOSE_ANGLE_BRACKET:
+        if self.__head != CLOSE_ANGLE_BRACKET:
             self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
         self.__advance()
         return PDFHexString(buffer)
 
             
-
-    def __parse_name(self):
+    def __extract_name(self):
         """
-        Parse a PDF name token.
+        Extracts a PDF name object from the input bytes sequence.
+
+
+        Returns
+        -------
+        True if successful, False otherwise.
         """
         buffer = bytearray()
         self.__advance()
-        while ord('!') <= self.__current and self.__current <= ord('~'):
-            if self.__current == NUMBER_SIGN:
+        while ord('!') <= self.__head and self.__head <= ord('~'):
+            if self.__head == NUMBER_SIGN:
                 self.__advance()
                 try:
-                    hexDigit1 = hex_to_number(self.__current)
+                    hexDigit1 = hex_to_number(self.__head)
                     self.__advance()
-                    hexDigit2 = hex_to_number(self.__current)
+                    hexDigit2 = hex_to_number(self.__head)
                     hexNum = (hexDigit1 << 4) + hexDigit2
                     buffer.append(hexNum)
                 except ValueError:
-                    self.__raise_lexer_error("'{}' is not an hexadecimal digit.".format(self.__current))
+                    self.__raise_lexer_error("'{}' is not an hexadecimal digit.".format(self.__head))
             else:
-                buffer.append(self.__current)
+                buffer.append(self.__head)
             self.__advance()
         return PDFName(buffer.decode('ascii'))
 
 
-    def __parse_number(self):
+    def __extract_number(self):
         """
-        Parse an integer or real value from the input stream.
+        Extracts an integer or real value from the input bytes sequence.
+
+
+        Returns
+        -------
+        True if successful, False otherwise.
         """
         buff = bytearray()
-        if self.__current == PLUS or self.__current == MINUS:
-            buff.append(self.__current)
+        if self.__head == PLUS or self.__head == MINUS:
+            buff.append(self.__head)
             self.__advance()
         
-        while is_digit(self.__current):
-            buff.append(self.__current)
+        while is_digit(self.__head):
+            buff.append(self.__head)
             self.__advance()
         
-        if self.__current == POINT:
+        if self.__head == POINT:
             buff.append(POINT)
             self.__advance()
         else:
             return int(buff.decode('utf-8'))
         
-        while is_digit(self.__current):
-            buff.append(self.__current)
+        while is_digit(self.__head):
+            buff.append(self.__head)
             self.__advance()
 
         return float(buff.decode('utf-8'))
 
     
-    def __parse_literal(self, lit):
+    def __extract_literal(self, lit):
+        """
+        Extracts the specified sequence of bytes starting from the current position.
+
+
+        Parameters
+        ----------
+        lit : bytes
+            The sequence of bytes to be extracted from the input bytes sequence.
+        
+
+        Returns
+        -------
+        True if successful, False otherwise.
+        """
         diff = False
         for i, l in enumerate(lit):
             p = self.__peek(i)
@@ -391,18 +495,21 @@ class Lexer:
             return False
 
 
-    def __match_keyword(self):
+    def __extract_keyword(self):
+        """
+        Extracts one of the PDF language keywords.
+
+
+        Returns
+        -------
+        True if a keyword was extracted, False otherwise.
+        """
         for k in KEYWORDS:
-            if self.__parse_literal(k):
+            if self.__extract_literal(k):
                 self.__currentLexeme = PDFKeyword(k)
                 return True
         else:
             return False
-
-
-    def put_back(self, current, lexeme):
-        self.__lexemesBuffer.append(lexeme)
-        self.__currentLexeme = current
 
 
     def __iter__(self):
@@ -417,15 +524,16 @@ class Lexer:
     def __next__(self):
         """
         Returns the next lexeme in the input bytes sequence. Also, set current_lexeme property 
-        to the returned value.
+        to the parsed lexeme.
+
 
         Description
         -----------
         The Lexical Analyzer is an iterator over the sequence of lexemes present in the input
         bytes sequence. For this reason the user can use the built-in `next` function to get
-        the next lexeme in the sequence. When the end of the bytes sequence is reached,
-        StopIteration is raised.
-
+        the next lexeme in the sequence. StopIteration is raised when the end of the bytes 
+        sequence is reached.
+        
 
         Returns:
         --------
@@ -445,31 +553,31 @@ class Lexer:
 
         self.__remove_blanks()
         # now try to parse lexical entities
-        if self.__current == OPEN_PARENTHESIS:
-            self.__currentLexeme = self.__parse_string_literal()
+        if self.__head == OPEN_PARENTHESIS:
+            self.__currentLexeme = self.__extract_string_literal()
     
-        elif self.__current == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET:
+        elif self.__head == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET:
             # If the next bytes had been another OPEN_ANGLE_BRACKET then we would have gotten
             # a "dictionary starts here" mark 
-            self.__currentLexeme = self.__parse_hexadecimal_string()
+            self.__currentLexeme = self.__extract_hexadecimal_string()
 
-        elif self.__current == FORWARD_SLASH:
-            self.__currentLexeme = self.__parse_name()
+        elif self.__head == FORWARD_SLASH:
+            self.__currentLexeme = self.__extract_name()
         
-        elif is_digit(self.__current) or self.__current in [PLUS, MINUS, POINT]:
-            self.__currentLexeme = self.__parse_number()
+        elif is_digit(self.__head) or self.__head in [PLUS, MINUS, POINT]:
+            self.__currentLexeme = self.__extract_number()
 
-        elif self.__parse_literal(b"true"):
+        elif self.__extract_literal(b"true"):
             self.__currentLexeme = True
         
-        elif self.__parse_literal(b"false"):
+        elif self.__extract_literal(b"false"):
             self.__currentLexeme = False
         
-        elif self.__parse_literal(b"stream"):
+        elif self.__extract_literal(b"stream"):
             # check whether there are the optional \r\n
-            if self.__current == CARRIAGE_RETURN:
+            if self.__head == CARRIAGE_RETURN:
                 self.__advance()
-                if self.__current != LINE_FEED:
+                if self.__head != LINE_FEED:
                     self.__raise_lexer_error("Carriage return not followed by a line feed after 'stream' keyword.")
             
             streamPos = self.__source.tell()
@@ -480,21 +588,37 @@ class Lexer:
                 data = self.__source.read(length)
                 self.__advance()
                 # now need to match endstream, or line feed + endstream
-                if self.__current == LINE_FEED:
+                if self.__head == LINE_FEED:
                     self.__advance()
                 self.__source.seek(oldPos, 0)
                 return data
             self.__currentLexeme = read_stream
 
-        elif self.__match_keyword():
+        elif self.__extract_keyword():
             # self.__currentLexeme is set inside the called function
             pass
         
-        elif self.__current in SINGLETONS:
-            self.__currentLexeme = PDFSingleton(self.__current)
+        elif self.__head in SINGLETONS:
+            self.__currentLexeme = PDFSingleton(self.__head)
             self.__advance()
         else:
             # If the input bytes sequence prefix doesn't match anything known, then...
             raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
 
         return self.__currentLexeme
+
+
+    def undo_next(self):
+        """
+        Reverts the Lexer's head position the one before the last call to __next__.
+
+        TODO: check the actual usefulness of this.
+
+        Description
+        -----------
+        Sometimes it is useful for the Lexer user to undo the calls to __next__ because it
+        may not be able to handle the particular extracted lexeme sequence (which maybe has
+        to be handled by another actor). In the PDF grammar, this may happen when parsing
+        """
+        self.__lexemesBuffer.append(lexeme)
+        self.__currentLexeme = current
