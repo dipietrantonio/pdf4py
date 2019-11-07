@@ -281,18 +281,18 @@ class Lexer:
         self.__advance()
 
 
-    def __advance(self):
+    def __advance(self, k = 1):
         """
-        Avance the Lexer's head to the next position.
+        Avance the Lexer's head of k positions.
         """
         if self.__ended:
             raise StopIteration()
-        self.__head = self.__source.read(1)
-        if self.__head == b'':
-            self.__head = b' '[0]
+        self.__head = self.__source.read(k)
+        if len(self.__head) < k:
+            self.__head = ord(' ')
             self.__ended = True
         else:
-            self.__head = self.__head[0]
+            self.__head = self.__head[-1]
 
 
     def __remove_blanks(self):
@@ -488,8 +488,7 @@ class Lexer:
                 break
         if not diff:
             # ok, we matched it
-            for i in range(len(lit)):
-                self.__advance()
+            self.__advance(len(lit))
             return True
         else:
             return False
