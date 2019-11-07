@@ -1,5 +1,5 @@
 import unittest
-from context import *
+from .context import *
 from binascii import unhexlify
 
 # array of pdf sentences used to test the Lexer class
