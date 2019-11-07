@@ -437,7 +437,7 @@ class Lexer:
         return PDFName(buffer.decode('ascii'))
 
 
-    def __extract_number(self):
+    def __extract_number(self, startsWithNumber):
         """
         Extracts an integer or real value from the input bytes sequence.
 
@@ -459,14 +459,20 @@ class Lexer:
             buff.append(POINT)
             self.__advance()
         else:
-            return int(buff.decode('utf-8'))
+            if not startsWithNumber and len(buff) == 1:
+                self.__raise_lexer_error("unexpected bytes sequence encountered.")
+            else:
+                return int(buff.decode('utf-8'))
         
         while is_digit(self.__head):
             buff.append(self.__head)
             self.__advance()
-
-        return float(buff.decode('utf-8'))
-
+        
+        if not startsWithNumber and len(buff) == 1:
+            self.__raise_lexer_error("unexpected bytes sequence encountered.")
+        else:
+            return float(buff.decode('utf-8'))
+        
     
     def __extract_literal(self, lit):
         """
@@ -566,8 +572,11 @@ class Lexer:
         elif self.__head == FORWARD_SLASH:
             self.__currentLexeme = self.__extract_name()
         
-        elif is_digit(self.__head) or self.__head in [PLUS, MINUS, POINT]:
-            self.__currentLexeme = self.__extract_number()
+        elif is_digit(self.__head):
+            self.__currentLexeme = self.__extract_number(startsWithNumber=True)
+
+        elif self.__head in [PLUS, MINUS, POINT]:
+            self.__currentLexeme = self.__extract_number(startsWithNumber=False)
 
         elif self.__extract_literal(b"true"):
             self.__currentLexeme = True
