@@ -149,7 +149,36 @@ class Lexer:
         self.__next__()
         return pos
 
-    
+
+    def get_context(self):
+        """
+        Returns the bytes near the Lexer's current head position.
+
+        Description
+        -----------
+        Given a context size of `C` bytes, and the current head position `P`, the 
+        function returns the bytes sequence starting from the byte at position
+        `max(P - C // 2, 0)` whose length is at most `C`.
+        """
+        # collect the context in which the error occurred
+        # collect the context in which the error occurred
+        errorPosition = self.__source.tell()
+        contextSideSize = self.__contextSize // 2
+        contextStart = errorPosition - contextSideSize
+        if contextStart < 0:
+            contextSideSize = contextSideSize + contextStart
+            contextStart = 0
+        self.__source.seek(contextStart, 0)
+        context = self.__source.read(self.__contextSize)
+        if isinstance(context, memoryview):
+            context = bytes(context)
+        # escaped occurrences occupy 2 spaces instead of one, when printed as bytes.
+        escapedOccurrences = sum(context[:contextSideSize].count(x) for x in STRING_ESCAPE_SEQUENCES.values())
+        errorRelativePosition = contextSideSize + escapedOccurrences + 1
+        self.__source.seek(errorPosition, 0)
+        return context, errorPosition, errorRelativePosition
+
+        
     def __raise_lexer_error(self, msg):
         """
         Called when a lexical error is encountered during the input tokenization,
@@ -171,20 +200,8 @@ class Lexer:
         PDFLexicalError
         """
         # collect the context in which the error occurred
-        errorPosition = self.__source.tell()
-        contextSideSize = self.__contextSize // 2
-        contextStart = errorPosition - contextSideSize
-        if contextStart < 0:
-            contextSideSize = contextSideSize + contextStart
-            contextStart = 0
-        self.__source.seek(contextStart, 0)
-        context = self.__source.read(self.__contextSize)
-        if isinstance(context, memoryview):
-            context = bytes(context)
-        # escaped occurrences occupy 2 spaces instead of one, when printed as bytes.
-        escapedOccurrences = sum(context[:contextSideSize].count(x) for x in STRING_ESCAPE_SEQUENCES.values())
-        self.__source.seek(errorPosition, 0)
-        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*(contextSideSize + escapedOccurrences + 1))
+        context, errorPosition, relativeErrorPosition = self.get_context()
+        finalMsg = "{}\n\nPosition {}, context:\n\t{}\n\t{}^".format(msg, errorPosition, context, " "*relativeErrorPosition)
         raise PDFLexicalError(finalMsg)
 
 
@@ -412,8 +429,8 @@ class Lexer:
 
         Returns:
         --------
-        An object that can be instance of: str, int, float, bool, PDFName, PDFKeyword,
-        PDFHexString, PDFSingleton #TODO complete here
+        An object that can be instance of: str, int, float, bool, function, PDFName, PDFKeyword,
+        PDFHexString, PDFSingleton.
 
 
         Raises:
