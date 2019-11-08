@@ -27,7 +27,7 @@ from collections import namedtuple
 import logging
 from binascii import unhexlify
 from ._charset import *
-
+import _io
 
 
 class PDFLexicalError(Exception):
@@ -45,7 +45,7 @@ PDFName = namedtuple("PDFName", ["value"])
 PDFKeyword = namedtuple("PDFKeyword", ["value"])
 PDFHexString = namedtuple("PDFHexString", ["value"])
 PDFSingleton = namedtuple("PDFSingleton", ["value"])
-
+PDFStreamReader = namedtuple("PDFStreamReader", ["value"])
 
 class Seekable:
     """
@@ -125,8 +125,11 @@ class Lexer:
 
         if isinstance(source, bytes) or isinstance(source, bytearray):
             self.__source = Seekable(source)
-        else:
+        elif isinstance(source, _io.BufferedReader):
             self.__source = source
+        else:
+            raise ValueError("The parser is given an invalid source of bytes.")
+        
         cpos = self.__source.tell()
         self.__source.seek(0, 2)
         self.__length = self.__source.tell()
@@ -144,8 +147,6 @@ class Lexer:
         """
         Returns the last parsed lexeme.
         """
-        if self.__ended:
-            raise StopIteration()
         return self.__currentLexeme
     
 
@@ -520,6 +521,37 @@ class Lexer:
             return False
 
 
+    def __extract_stream_reader(self):
+        """
+        Extracts the stream keyword and defines a function that will read the stream content once its
+        length is known.
+
+        
+        Returns
+        -------
+        A PDFStreamReader object, containing a callable that will return the stream content when called.
+        """
+        # check whether there are the optional \r\n
+        if self.__head == CARRIAGE_RETURN:
+            self.__advance()
+            if self.__head != LINE_FEED:
+                self.__raise_lexer_error("Carriage return not followed by a line feed after 'stream' keyword.")
+        
+        streamPos = self.__source.tell()
+        # build a closure to read the stream later
+        def read_stream(length):
+            oldPos = self.__source.tell()
+            self.__source.seek(streamPos, 0)
+            data = self.__source.read(length)
+            self.__advance()
+            # now need to match endstream, or line feed + endstream
+            if self.__head == LINE_FEED:
+                self.__advance()
+            self.__source.seek(oldPos, 0)
+            return data
+        return PDFStreamReader(read_stream)
+        
+
     def __iter__(self):
         """
         Makes a Lexer Analyzer instance an iterable object.
@@ -585,25 +617,7 @@ class Lexer:
             self.__currentLexeme = False
         
         elif self.__extract_literal(b"stream"):
-            # check whether there are the optional \r\n
-            if self.__head == CARRIAGE_RETURN:
-                self.__advance()
-                if self.__head != LINE_FEED:
-                    self.__raise_lexer_error("Carriage return not followed by a line feed after 'stream' keyword.")
-            
-            streamPos = self.__source.tell()
-            # build a closure to read the stream later
-            def read_stream(length):
-                oldPos = self.__source.tell()
-                self.__source.seek(streamPos, 0)
-                data = self.__source.read(length)
-                self.__advance()
-                # now need to match endstream, or line feed + endstream
-                if self.__head == LINE_FEED:
-                    self.__advance()
-                self.__source.seek(oldPos, 0)
-                return data
-            self.__currentLexeme = read_stream
+            self.__currentLexeme = self.__extract_stream_reader()
 
         elif self.__extract_keyword():
             # self.__currentLexeme is set inside the called function
