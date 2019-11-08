@@ -179,6 +179,57 @@ class SeekableTestCase(unittest.TestCase):
 
 
 
+class ParserUnitTests(unittest.TestCase):
+
+
+    def test_parser_creation(self):
+        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
+            parpkg.Parser(fp)
+    
+
+    def test_parser_with_simple_objects(self):
+        parser = parpkg.Parser(b"12 34.2 (ciao) false 3 3 R /myname <ab>")
+        check = [12, 34.2, "ciao", False, parpkg.PDFReference(3, 3), parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
+        for c in check:
+            x = parser._Parser__parse_object()
+            self.assertEqual(x, c)
+
+
+    def test_parse_list_of_objects(self):
+        parser = parpkg.Parser(b"[12 34.2 [(ciao) false] 3 3 R /myname <ab>]")
+        check = [12, 34.2, ["ciao", False], parpkg.PDFReference(3, 3), parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
+        x = parser._Parser__parse_object()
+        self.assertEqual(x, check)
+
+
+    def test_parse_dictionary_object(self):
+        dictExample = b"""<< /Type /Example
+                            /Subtype /DictionaryExample
+                            /Version 0.01
+                            /IntegerItem 12
+                            /StringItem (a string)
+                            /Subdictionary << /Item1 0.4
+                                /Item2 true
+                                /LastItem (not!)
+                                /VeryLastItem (OK)
+                                >>
+                            >>"""
+        
+        dictCorrect = { 'Type': parpkg.PDFName(value='Example'),
+                        'Subtype': parpkg.PDFName(value='DictionaryExample'),
+                        'Version': 0.01, 
+                        'IntegerItem': 12,
+                        'StringItem': 'a string',
+                        'Subdictionary': {'Item1': 0.4,
+                                        'Item2': True,
+                                        'LastItem': 'not!',
+                                        'VeryLastItem': 'OK'}
+                        }
+        parser = parpkg.Parser(dictExample)
+        od = parser._Parser__parse_object()
+        self.assertEqual(dictCorrect, od)
+
+
 if __name__ == "__main__":
     unittest.main()
 

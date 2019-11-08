@@ -18,8 +18,8 @@ Nothing to implement here, just introductory stuff.
 | 7.3.3             | Numeric objects     | ✓                |
 | 7.3.4             | String objects      | ✓                |
 | 7.3.5             | Name objects        | ✓                |
-| 7.3.6             | Array objects       | Refactoring      |
-| 7.3.7             | Dictionary objects  | Refactoring      |
+| 7.3.6             | Array objects       | ✓                |
+| 7.3.7             | Dictionary objects  | ✓                |
 | 7.3.8             | Stream objects      | Refactoring      |
 | 7.3.9             | Null object         | ✓                |
 | 7.3.10            | Indirect objects    | Refactoring      |

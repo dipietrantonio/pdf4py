@@ -26,6 +26,7 @@ SOFTWARE.
 import logging
 from collections import namedtuple
 from functools import partial
+from contextlib import suppress
 from ._lexer import *
 from ._decoders import decode
 
@@ -58,16 +59,16 @@ TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
 
 
-
-
 class XRefTable:
 
-    def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set', compressedObjects : 'dict' = None, sideObjstm = None):
+    def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set',
+            compressedObjects : 'dict' = None, sideObjStm = None):
+        
         self.__inUseObjects = inUseObjects
         self.__freeObjects = freeObjects
         self.__compressedObjects = {} if compressedObjects is None else compressedObjects
         self.__previous = previous
-        self.__sideObjstm = sideObjstm
+        self.__sideObjStm = sideObjStm
         
 
     @property
@@ -84,6 +85,8 @@ class XRefTable:
             return v
         if key in self.__freeObjects:
             return None
+        if self.__sideObjStm is not None:
+            pass # TODO do something
         if self.__previous is None:
             logging.debug("Key not found: " + str(key))
             raise KeyError()
@@ -104,13 +107,13 @@ class XRefTable:
 
 
 
-class PDFParser:
+class Parser:
 
 
     def __init__(self, obj):
         self.__lexer = Lexer(obj)
-        self.__parse_xref()
-       
+        with suppress(StopIteration):
+            next(self.__lexer)
 
 
     def parse_xref_entry(self, xrefEntry : 'PDFXrefEntity'):
@@ -290,39 +293,17 @@ class PDFParser:
         trailer = self.__parse_dictionary_or_stream()
         return trailer, (inUseObjects, freeObjects)
     
-
-
-    def parse_list(self):
-        if not self.__lexer.current_lexeme.value == '[':
-            raise PDFSyntaxError("Expecting opening square braket to parse list, but not found.")
-        next(self.__lexer)
-        L = list()
-        while True:
-            if self.__lexer.current_lexeme.value == ']':
-                break
-            L.append(self.__parse_object())
-
-        # ok, we successfully parsed a list
-        try:
-            next(self.__lexer) # remove CLOSE_SQUARE_BRAKET from stream
-        except StopIteration:
-            logging.debug("Stop iteration reached while parsing a list.")
-        return L
-
     
-    def __parse_dictionary_or_stream(self):
-        if not self.__lexer.current_lexeme.type == LEXEME_DICT_OPEN:
-            raise PDFSyntaxError("Expecting opening token for dictionary, but not found.")
-        
+    def __parse_dictionary_or_stream(self): 
         next(self.__lexer)
         D = dict()
         # now process key - value pairs
         while True:
             # get the key
             keyToken = self.__lexer.current_lexeme
-            if keyToken.type == LEXEME_DICT_CLOSE:
+            if isinstance(keyToken, PDFKeyword) and keyToken.value == b">>":
                 break
-            elif keyToken.type != LEXEME_NAME:
+            elif not isinstance(keyToken, PDFName):
                 raise PDFSyntaxError("Expecting dictionary key, but not found.")
             # now get the value
             next(self.__lexer)
@@ -332,11 +313,9 @@ class PDFParser:
         try:
             nextLexeme = next(self.__lexer)
         except StopIteration:
-            logging.info("__parse_dictionary_or_stream: end of stream reached.")
-            logging.info(str(D))
             return D
         
-        if not self.__lexer.current_lexeme.type == LEXEME_STREAM:
+        if not isinstance(self.__lexer.current_lexeme, PDFStreamReader):
             return D
 
         # it is a stream object, lets find out its length
@@ -369,75 +348,69 @@ class PDFParser:
         """
         Parse a generic PDF object.
         """
-        if self.__lexer.current_lexeme.type == LEXEME_SINGLETON and\
-                self.__lexer.current_lexeme.value == '[':
-            # it is a list of objects, parse it
-            return self.parse_list()
+        if isinstance(self.__lexer.current_lexeme, PDFSingleton) and self.__lexer.current_lexeme.value == OPEN_SQUARE_BRACKET:
+            # it is a list of objects
+            next(self.__lexer)
+            L = list()
+            while True:
+                if isinstance(self.__lexer.current_lexeme, PDFSingleton) and self.__lexer.current_lexeme.value == CLOSE_SQUARE_BRACKET:
+                    break
+                L.append(self.__parse_object())
+            # we have successfully parsed a list
+            with suppress(StopIteration):
+                next(self.__lexer) # remove CLOSE_SQUARE_BRAKET token stream from stream
+            return L
         
-        elif self.__lexer.current_lexeme.type == LEXEME_DICT_OPEN:
-            return self.__parse_dictionary_or_stream()
-        
-        elif self.__lexer.current_lexeme.type in [LEXEME_STRING_HEXADECIMAL, LEXEME_STRING_LITERAL, LEXEME_NAME]:
-            # because those types can be confused or are indistinguishable, we return the lexeme
+        elif isinstance(self.__lexer.current_lexeme, PDFKeyword):
+            keywordVal = self.__lexer.current_lexeme.value            
+            if keywordVal == b"<<":
+                return self.__parse_dictionary_or_stream()
+            elif keywordVal == b"null":
+                with suppress(StopIteration):
+                    next(self.__lexer)
+                return None
+
+        elif self.__lexer.current_lexeme.__class__ in [PDFHexString, str, bool, float, PDFName]:
             s = self.__lexer.current_lexeme
-            try:
+            with suppress(StopIteration):
                 next(self.__lexer)
-            except StopIteration:
-                logging.info("__parse_object: end of stream reached.")
             return s
-        elif self.__lexer.current_lexeme.type == LEXEME_BOOLEAN:
-            # a boolean token can be represented by Python's native bool type
-            s = self.__lexer.current_lexeme.value
-            try:
-                next(self.__lexer)
-            except StopIteration:
-                logging.info("__parse_object: end of stream reached.")
-            return s
-        elif self.__lexer.current_lexeme.type == LEXEME_NUMBER:
+
+        elif isinstance(self.__lexer.current_lexeme, int):
             # Here we can parse a single number or a reference to an indirect object
             lex1 = self.__lexer.current_lexeme
+            
             try:
                 lex2 = next(self.__lexer)
             except StopIteration:
-                logging.info("__parse_object: end of stream reached.")
-                return lex1.value
-            if lex2.type != LEXEME_NUMBER:
-                return lex1.value
+                return lex1
+
+            if not isinstance(lex2, int):
+                return lex1
             
             try:
                 lex3 = next(self.__lexer)
             except StopIteration:
-                logging.info("__parse_object: end of stream reached.")
-                return lex1.value
+                return lex1
         
-            if lex3.type == LEXEME_SINGLETON and lex3.value == 'R':
-                try:
+            if isinstance(lex3, PDFSingleton) and lex3.value == KEYWORD_REFERENCE:
+                with suppress(StopIteration):
                     next(self.__lexer)
-                except StopIteration:
-                    logging.info("__parse_object: end of stream reached.")
-                return PDFReference(lex1.value, lex2.value)
-            elif lex3.type == LEXEME_OBJ_OPEN:
+                return PDFReference(lex1, lex2)
+            
+            elif isinstance(lex3, PDFKeyword) and lex3.value == b"obj":
                 next(self.__lexer)
                 o = self.__parse_object()
-                if not self.__lexer.current_lexeme.type == LEXEME_OBJ_CLOSE:
+                if not isinstance(self.__lexer.current_lexeme, PDFKeyword) or self.__lexer.current_lexeme.value != b"endobj":
                     raise PDFSyntaxError("Expecting matching 'endobj' for 'obj', but not found.")
-                try:
+                with suppress(StopIteration):
                     next(self.__lexer)
-                except StopIteration:
-                    logging.info("__parse_object: end of stream reached.")
-                return PDFIndirectObject(lex1.value, lex2.value, o)
+                return PDFIndirectObject(lex1, lex2, o)
+            
             else:
-                # it was just a number, return it and put back other stuff in the stack
-                self.__lexer.put_back(lex2, lex3)
-                return lex1.value
+                # it was just a integer number, undo the last next() call and return it
+                self.__lexer.undo_next(lex2)
+                return lex1
         
-        elif self.__lexer.current_lexeme.type == LEXEME_KEYWORD and self.__lexer.current_lexeme.value == b"null":
-            try:
-                next(self.__lexer)
-            except StopIteration:
-                logging.info("__parse_object: end of stream reached.")
-            return None
-
-        else:
-            logging.info("__parse_object: unexpected lexeme encountered ({}).".format(self.__lexer.current_lexeme))
-            raise PDFSyntaxError("Unexpected lexeme encountered ({}).".format(self.__lexer.current_lexeme))
+        # if the execution arrived here, it means that there is a syntax error.
+        raise PDFSyntaxError("Unexpected lexeme encountered ({}).".format(self.__lexer.current_lexeme))
