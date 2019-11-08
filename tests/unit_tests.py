@@ -188,8 +188,8 @@ class ParserUnitTests(unittest.TestCase):
     
 
     def test_parser_with_simple_objects(self):
-        parser = parpkg.Parser(b"12 34.2 (ciao) false 3 3 R /myname <ab>")
-        check = [12, 34.2, "ciao", False, parpkg.PDFReference(3, 3), parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
+        parser = parpkg.Parser(b"12 34.2 (ciao) false 3 3 R 4 4 4 /myname <ab>")
+        check = [12, 34.2, "ciao", False, parpkg.PDFReference(3, 3), 4, 4, 4, parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
         for c in check:
             x = parser._Parser__parse_object()
             self.assertEqual(x, c)

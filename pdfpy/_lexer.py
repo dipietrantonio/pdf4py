@@ -633,17 +633,22 @@ class Lexer:
         return self.__currentLexeme
 
 
-    def undo_next(self):
+    def undo_next(self, item):
         """
         Reverts the Lexer's head position the one before the last call to __next__.
 
-        TODO: check the actual usefulness of this.
 
         Description
         -----------
         Sometimes it is useful for the Lexer user to undo the calls to __next__ because it
         may not be able to handle the particular extracted lexeme sequence (which maybe has
-        to be handled by another actor). In the PDF grammar, this may happen when parsing
+        to be handled by another actor). While parsing a PDF, this may happen when 2 integers
+        have been extracted from the input and the third lexeme will decide if an indirect 
+        reference has been parsed (meaning the third lexeme is 'R') or just three integers.
+        In the latter case, we want to return just an integer, so the third one is put in a
+        buffer, the second one is set as the current lexeme (after having parsed the first
+        number), and the first number is returned. For more information look at the parser
+        module.
         """
-        self.__lexemesBuffer.append(lexeme)
-        self.__currentLexeme = current
+        self.__lexemesBuffer.append(self.__currentLexeme)
+        self.__currentLexeme = item
