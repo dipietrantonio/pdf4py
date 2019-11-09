@@ -40,7 +40,9 @@ class ParseALatexPDFTest(unittest.TestCase):
 
 
     def test_read_header(self):
-        self.assertTrue(False, "Impement me!")
+        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
+            parser = parpkg.Parser(fp)
+            self.assertEqual(parser.version, "PDF-1.4")
     
 
     def test_simple(self):
@@ -48,7 +50,6 @@ class ParseALatexPDFTest(unittest.TestCase):
             parser = parpkg.Parser(fp)
             for pdfXrefEntry in parser.xRefTable:
                 entity = parser.parse_xref_entry(pdfXrefEntry)
-        self.assertFalse(True, "Implement me!")
 
 
 
@@ -60,8 +61,11 @@ class ParseAllPDFs(unittest.TestCase):
             with open(os.path.join(PDFS_FOLDER, pdfPath), "rb") as fp:
                 parser = parpkg.Parser(fp)
                 for pdfXrefEntry in parser.xRefTable:
-                    parser.parse_xref_entry(pdfXrefEntry)
-            
+                    x = parser.parse_xref_entry(pdfXrefEntry)
+                    if isinstance(x, parpkg.PDFIndirectObject):
+                        x = x.value
+                    if isinstance(x, parpkg.PDFStream):
+                        x.stream()
 
 if __name__ == "__main__":
     unittest.main()

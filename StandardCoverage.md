@@ -10,31 +10,38 @@ Nothing to implement here, just introductory stuff.
 
 ## Chapter 7 - Syntax
 
-| Section           | Description         | Status           |
-| ----------------- | -----------         | ---------------- |
-| 7.2               | Lexical conventions | ✓                |
-| 7.3               | Objects             | Work in progress |
-| 7.3.2             | Boolean objects     | ✓                |
-| 7.3.3             | Numeric objects     | ✓                |
-| 7.3.4             | String objects      | ✓                |
-| 7.3.5             | Name objects        | ✓                |
-| 7.3.6             | Array objects       | ✓                |
-| 7.3.7             | Dictionary objects  | ✓                |
-| 7.3.8             | Stream objects      | ~ (F parameter not supported yet)     |
-| 7.3.9             | Null object         | ✓                |
-| 7.3.10            | Indirect objects    | Refactoring      |
-| 7.4               | Filters             | Minimal support  |
-| 7.4.2             | ASCIIHexDecode      | ✗                |
-| 7.4.3             | ASCII85Decode       | ✗                |
-| 7.4.4             | LZWDecode           | ✗                |
-| 7.4.4             | FlateDecode         | ✓                |
-| 7.4.5             | RunLengthDecode     | ✗                |
-| 7.4.6             | CCITTFaxDecode      | ✗                |
-| 7.4.7             | JBIG2Decode         | ✗                |
-| 7.4.8             | DCTDecode           | ✗                |
-| 7.4.9             | JPXDecode           | ✗                |
-| 7.4.10            | Crypt               | ✗                |
-| ....                                                       |
+| Section           | Description                     | Status                                 |
+| ----------------- | ------------------------------- | -------------------------------------- |
+| 7.2               | Lexical conventions             | ✓                                      |           
+| 7.3               | Objects                         | ~                                      |
+| 7.3.2             | Boolean objects                 | ✓                                      |
+| 7.3.3             | Numeric objects                 | ✓                                      |
+| 7.3.4             | String objects                  | ✓                                      |
+| 7.3.5             | Name objects                    | ✓                                      |
+| 7.3.6             | Array objects                   | ✓                                      |
+| 7.3.7             | Dictionary objects              | ✓                                      |
+| 7.3.8             | Stream objects                  | ~ (F parameter not supported yet)      |
+| 7.3.9             | Null object                     | ✓                                      |
+| 7.3.10            | Indirect objects                | ✓                                      |
+| 7.4               | Filters                         | Minimal support                        |
+| 7.4.2             | ASCIIHexDecode                  | ✗                                      |
+| 7.4.3             | ASCII85Decode                   | ✗                                      |
+| 7.4.4             | LZWDecode                       | ✗                                      |
+| 7.4.4             | FlateDecode                     | ✓                                      |
+| 7.4.5             | RunLengthDecode                 | ✗                                      |
+| 7.4.6             | CCITTFaxDecode                  | ✗                                      |
+| 7.4.7             | JBIG2Decode                     | ✗                                      |
+| 7.4.8             | DCTDecode                       | ✗                                      |
+| 7.4.9             | JPXDecode                       | ✗                                      |
+| 7.4.10            | Crypt                           | ✗                                      |
+| 7.5               | File Structure                  | Work in progress                       |
+| 7.5.2             | File header                     | ✓                                      |
+| 7.5.4             | Cross Reference Table           | ✓                                      |
+| 7.5.5             | File trailer                    | ✓                                      |
+| 7.5.6             | Incremental updates             | ✓                                      |
+| 7.5.7             | Object streams                  | ~                                      |
+| 7.5.8             | Cross Reference Streams         | ✓                                      |
+| 7.6               | Encription                      | ✗                                      |
 
 
 ## Chapter 8 - Graphics

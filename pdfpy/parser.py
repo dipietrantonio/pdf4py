@@ -29,53 +29,131 @@ from functools import partial
 from contextlib import suppress
 from ._lexer import *
 from ._decoders import decode
-
-
-
-class PDFSyntaxError(Exception):
-    """
-    Raised when the parsed PDF does not conform to syntax rules.
-    """
-
-
-class PDFUnsupportedError(Exception):
-    """
-    When the parser does not support a PDF feature.
-    """
-
-
+from .exceptions import PDFSyntaxError, PDFUnsupportedError
 
 PDFStream = namedtuple("PDFStream", ["dictionary", "stream"])
 PDFReference = namedtuple("PDFReference", ["object_number", "generation_number"])
 PDFIndirectObject = namedtuple("PDFIndirectObject", ["object_number", "generation_number", "value"])
 XrefInUseEntry = namedtuple("XrefInUseEntry", ["offset", "object_number", "generation_number"])
 XrefCompressedEntry = namedtuple("XrefCompressedEntry", ["object_number", "objstm_number", "index"])
+    
 
 
-
-class BaseParser:
+class XRefTable:
     """
-    A parser 
+    Implements the functionalities of a Cross Reference Table.
+
+    An instance of `XRefTable` can be iterated over to get all the references to "in use" and "compressed" objects.
+    Furthermore it implements the __getitem__ method that is used by the parser to look up objects if required
+    during the parsing process.
+    """
+    def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set',
+            compressedObjects : 'dict' = None):
+        self.__inUseObjects = inUseObjects
+        self.__freeObjects = freeObjects
+        self.__compressedObjects = {} if compressedObjects is None else compressedObjects
+        self.__previous = previous
+        
+
+    @property
+    def previous(self):
+        return self.__previous
+
+
+    def __getitem__(self, key):
+        v = self.__inUseObjects.get(key)
+        if v is not None:
+            return v
+        v = self.__compressedObjects.get(key)
+        if v is not None:
+            return v
+        if key in self.__freeObjects:
+            return None
+        if self.__previous is None:
+            raise KeyError("Key not found: " + str(key))
+        else:
+            return self.__previous[key]
+    
+    
+    def __iter__(self):      
+        def gen():
+            if self.previous is not None:
+                for item in iter(self.previous):
+                    if isinstance(item, XrefInUseEntry) and (item[1], item[2]) in self.__freeObjects:
+                        pass
+                    # TODO: understand how to delete compressed object (maybe it is not deleted at all)
+                    yield item
+            yield from self.__inUseObjects.values()
+            yield from self.__compressedObjects.values()
+
+        return gen()
+
+    
+    def __support_str_(self):
+        """
+        Support method to generate a string representation of the table.
+        """
+
+        inUseObjs = "\n".join(
+            "{:10} {:5} {:10} n".format(x.object_number, x.generation_number, x.offset) for x in sorted(self.__inUseObjects.values())
+            )
+        freeObjs = "\n".join(
+            "{:10} {:5} f".format(x[0], x[1] + 1) for x in sorted(self.__freeObjects)
+            )
+        compressedObjs = "\n".join(
+            "{} {}".format(x[0], x[1]) for x in sorted(self.__compressedObjects.values())
+            )
+        
+        resultingString = "Section\nIn use objects:\n{}\nFree objects:\n{}\nCompressed objects:\n{}".format(
+            inUseObjs, freeObjs, compressedObjs)
+        
+        if self.__previous is not None:
+            prevString = self.__previous.__support_str_()
+            return prevString + "\n" + resultingString
+        else:
+            return resultingString
+
+
+    def __str__(self):
+        # TODO: build a better representation
+        return self.__support_str_()
+
+
+
+class Parser:
+    """
+    A parser is a software that checks whether the stream of lexemes extracted from the input forms
+    valid sentences according to the target language. In practice, `Parser` uses the Lexer to extract
+    simple, atomic, elements like PDF strings, names, numbers and keywords; in addition, it is able
+    to recognize when these elements must be put together to form more complex data structures like
+    arrays, dictionaries and streams.
     """
 
-    def __init__(self, obj):
+    TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
+
+
+    def __init__(self, source):
         """
         Initialize the parser by setting the underlying lexical analyzer and load the fist lexeme.
         From now on the following invariant must be kept: before any call the to BaseParser._parse_object
         method, the current_lexeme property of the lexer must be set to the fist unprocessed lexeme in
         the input.
         """
-        self._lexer = Lexer(obj)
-        with suppress(StopIteration):
-            next(self._lexer)
-    
+        # read the header
+        self._lexer = Lexer(source)
+        self._read_header()
+        self.__parse_xref_table()
+        
 
-    def __next__(self):
-        return self._parse_object()
+    def _read_header(self):
+        self._lexer.source.seek(0, 0)
+        buff = bytearray()
+        c = self._lexer.source.read(1)[0]
+        while(c != LINE_FEED):
+            buff.append(c)
+            c = self._lexer.source.read(1)[0]
+        self.version = buff.decode()[1:]
 
-
-    def __iter__(self):
-        return self
 
 
     def _raise_syntax_error(self, msg):
@@ -217,88 +295,6 @@ class BaseParser:
         raise self._raise_syntax_error("Unexpected lexeme encountered ({}).".format(self._lexer.current_lexeme))
 
 
-
-class XRefTable:
-
-    def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set',
-            compressedObjects : 'dict' = None):
-        self.__inUseObjects = inUseObjects
-        self.__freeObjects = freeObjects
-        self.__compressedObjects = {} if compressedObjects is None else compressedObjects
-        self.__previous = previous
-        
-
-    @property
-    def previous(self):
-        return self.__previous
-
-
-    def __getitem__(self, key):
-        v = self.__inUseObjects.get(key)
-        if v is not None:
-            return v
-        v = self.__compressedObjects.get(key)
-        if v is not None:
-            return v
-        if key in self.__freeObjects:
-            return None
-        if self.__previous is None:
-            raise KeyError("Key not found: " + str(key))
-        else:
-            return self.__previous[key]
-    
-    
-    def __iter__(self):      
-        def gen():
-            if self.previous is not None:
-                for item in iter(self.previous):
-                    if isinstance(item, XrefInUseEntry) and (item[1], item[2]) in self.__freeObjects:
-                        pass
-                    # TODO: understand how to delete compressed object (maybe it is not deleted at all)
-                    yield item
-            yield from self.__inUseObjects.values()
-            yield from self.__compressedObjects.values()
-
-        return gen()
-
-    
-    def __support_str_(self):
-
-        inUseObjs = "\n".join(
-            "{:10} {:5} {:10} n".format(x.object_number, x.generation_number, x.offset) for x in sorted(self.__inUseObjects.values())
-            )
-        freeObjs = "\n".join(
-            "{:10} {:5} f".format(x[0], x[1] + 1) for x in sorted(self.__freeObjects)
-            )
-        compressedObjs = "\n".join(
-            "{} {}".format(x[0], x[1]) for x in sorted(self.__compressedObjects.values())
-            )
-        
-        resultingString = "Section\nIn use objects:\n{}\nFree objects:\n{}\nCompressed objects:\n{}".format(
-            inUseObjs, freeObjs, compressedObjs)
-        
-        if self.__previous is not None:
-            prevString = self.__previous.__support_str_()
-            return prevString + "\n" + resultingString
-        else:
-            return resultingString
-
-
-    def __str__(self):
-        # TODO: build a better representation
-        return self.__support_str_()
-
-
-
-class Parser(BaseParser):
-
-    TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
-
-    def __init__(self, obj):
-        super().__init__(obj)
-        self.__parse_xref_table()
-
-
     def parse_xref_entry(self, xrefEntry : 'PDFXrefEntity'):
 
         if isinstance(xrefEntry, XrefInUseEntry):
@@ -407,6 +403,11 @@ class Parser(BaseParser):
         pos = 0
         # retrieves info about xref stream layout
         # TODO: support extends keyword
+        if "Extends" in objStmDict:
+            logging.warning("""
+            'Extends' keyword found in a object stream dictionary, but it is not supported yet.
+            Consider sending the file you are parsing to the developers of the library."""
+            )
         size = objStmDict["Size"]
         index = objStmDict.get("Index", [0, size])
         # An array of integers representing the size of the fields in a single cross-reference entry.

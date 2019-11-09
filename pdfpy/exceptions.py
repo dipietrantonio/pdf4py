@@ -23,35 +23,21 @@ SOFTWARE.
 """
 
 
-import zlib
-from .exceptions import PDFUnsupportedError
 
-decoders = {}
-
-
-def register(filterName):
-    def wrapper(func):
-        decoders[filterName] = func
-    return wrapper
+class PDFLexicalError(Exception):
+    """
+    Lexical error
+    """
 
 
-@register("FlateDecode")
-def flate_decode(data):
-    return zlib.decompress(data)
+class PDFSyntaxError(Exception):
+    """
+    Raised when the parsed PDF does not conform to syntax rules.
+    """
 
 
-def decode(D : 'dict', sec : 'dict', data):
-    filtersChain = D.get('Filter')
-    if filtersChain is not None:
-        if isinstance(filtersChain, list):
-            filtersChain = tuple(x.value for x in filtersChain)
-        else:
-            filtersChain = (filtersChain.value,)
-        filterParams = D.get('FilterParams')
-        for filterSpecifier in reversed(filtersChain):
-            decoder = decoders.get(filterSpecifier)
-            if decoder is None:
-                raise PDFUnsupportedError("Filter '{}' is not supported.".format(filterSpecifier))
-            data = decoder(data)    
-    return data
+class PDFUnsupportedError(Exception):
+    """
+    Raised the parser does not support a PDF feature.
+    """
 

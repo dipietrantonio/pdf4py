@@ -28,13 +28,7 @@ import logging
 from binascii import unhexlify
 from ._charset import *
 import _io
-
-
-class PDFLexicalError(Exception):
-    """
-    Lexical error
-    """
-
+from .exceptions import PDFLexicalError
 # ------------------------------------------------------------------------------------
 # Lexeme classes
 # Here are defined all the classes used to represent a valid lexeme in the pdf language
