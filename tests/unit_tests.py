@@ -207,23 +207,23 @@ class SeekableTestCase(unittest.TestCase):
 class ParserUnitTests(unittest.TestCase):
 
 
-    def test_parser_creation(self):
+    def testcreation(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
-            parpkg.Parser(fp)
+            parpkg.BaseParser(fp)
     
 
-    def test_parser_with_simple_objects(self):
-        parser = parpkg.Parser(b"12 34.2 (ciao) false 3 3 R 4 4 4 /myname <ab>")
+    def testwith_simple_objects(self):
+        parser = parpkg.BaseParser(b"12 34.2 (ciao) false 3 3 R 4 4 4 /myname <ab>")
         check = [12, 34.2, "ciao", False, parpkg.PDFReference(3, 3), 4, 4, 4, parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
         for c in check:
-            x = parser._Parser__parse_object()
+            x = parser._parse_object()
             self.assertEqual(x, c)
 
 
     def test_parse_list_of_objects(self):
-        parser = parpkg.Parser(b"[12 34.2 [(ciao) false] 3 3 R /myname <ab>]")
+        parser = parpkg.BaseParser(b"[12 34.2 [(ciao) false] 3 3 R /myname <ab>]")
         check = [12, 34.2, ["ciao", False], parpkg.PDFReference(3, 3), parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
-        x = parser._Parser__parse_object()
+        x = parser._parse_object()
         self.assertEqual(x, check)
 
 
@@ -250,16 +250,16 @@ class ParserUnitTests(unittest.TestCase):
                                         'LastItem': 'not!',
                                         'VeryLastItem': 'OK'}
                         }
-        parser = parpkg.Parser(dictExample)
-        od = parser._Parser__parse_object()
+        parser = parpkg.BaseParser(dictExample)
+        od = parser._parse_object()
         self.assertEqual(dictCorrect, od)
 
 
     def test_parse_indirect_object(self):
-        parser = parpkg.Parser(b"[12 34.2 [(ciao) false] 12 0 obj (Brillig) endobj 3 3 R /myname <ab>]")
+        parser = parpkg.BaseParser(b"[12 34.2 [(ciao) false] 12 0 obj (Brillig) endobj 3 3 R /myname <ab>]")
         check = [12, 34.2, ["ciao", False], parpkg.PDFIndirectObject(12, 0, "Brillig"), parpkg.PDFReference(3, 3), 
             parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
-        self.assertEqual(check, parser._Parser__parse_object())
+        self.assertEqual(check, parser._parse_object())
     
 
     def test_parse_stream(self):
@@ -268,8 +268,8 @@ stream
 abc
 endstream
 endobj"""
-        parser = parpkg.Parser(streamb)
-        obj = parser._Parser__parse_object()
+        parser = parpkg.BaseParser(streamb)
+        obj = parser._parse_object()
         self.assertIsInstance(obj, parpkg.PDFIndirectObject)
         di = obj.value
         self.assertIsInstance(di, parpkg.PDFStream)
