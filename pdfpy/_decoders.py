@@ -41,15 +41,15 @@ def flate_decode(data):
 
 
 def decode(D : 'dict', sec : 'dict', data):
-    filtersChain = D['Filter']
-    if isinstance(filtersChain, list):
-        filtersChain = tuple(x.value for x in filtersChain)
-    else:
-        filtersChain = (filtersChain.value,)
-    filterParams = D.get('FilterParams')
-    for filterSpecifier in reversed(filtersChain):
-        decoder = decoders[filterSpecifier]
-        data = decoder(data)
-    
+    filtersChain = D.get('Filter')
+    if filtersChain is not None:
+        if isinstance(filtersChain, list):
+            filtersChain = tuple(x.value for x in filtersChain)
+        else:
+            filtersChain = (filtersChain.value,)
+        filterParams = D.get('FilterParams')
+        for filterSpecifier in reversed(filtersChain):
+            decoder = decoders[filterSpecifier]
+            data = decoder(data)    
     return data
 

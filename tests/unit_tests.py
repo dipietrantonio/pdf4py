@@ -255,6 +255,27 @@ class ParserUnitTests(unittest.TestCase):
         self.assertEqual(dictCorrect, od)
 
 
+    def test_parse_indirect_object(self):
+        parser = parpkg.Parser(b"[12 34.2 [(ciao) false] 12 0 obj (Brillig) endobj 3 3 R /myname <ab>]")
+        check = [12, 34.2, ["ciao", False], parpkg.PDFIndirectObject(12, 0, "Brillig"), parpkg.PDFReference(3, 3), 
+            parpkg.PDFName("myname"), parpkg.PDFHexString(b"ab")]
+        self.assertEqual(check, parser._Parser__parse_object())
+    
+
+    def test_parse_stream(self):
+        streamb = b"""7 0 obj << /Length 3 >>
+stream
+abc
+endstream
+endobj"""
+        parser = parpkg.Parser(streamb)
+        obj = parser._Parser__parse_object()
+        self.assertIsInstance(obj, parpkg.PDFIndirectObject)
+        di = obj.value
+        self.assertIsInstance(di, parpkg.PDFStream)
+        self.assertEqual(b"abc", di.stream())
+
+
 if __name__ == "__main__":
     unittest.main()
 

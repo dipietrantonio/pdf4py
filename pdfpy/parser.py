@@ -320,6 +320,14 @@ class Parser:
 
         # it is a stream object, lets find out its length
         length = D["Length"]
+        # check also if there is a specified file where to read
+        filePath = D.get("F")
+        if filePath is not None:
+            raise PDFUnsupportedError("""
+                Support for streams having data specified in an external file are not supported yet.
+                Please consider sending to the developers the PDF that generated this exception so that
+                they can work on supporting this feature. 
+                """)
         if isinstance(length, PDFReference):
             key = (length.object_number, length.generation_number)
             try:
@@ -337,8 +345,8 @@ class Parser:
             data = bytesReader(length)
             return decode(D, {}, data)
         # and move the header to the endstream position
-        currentLexeme = self.__lexer.move_at_position(self.__handle.tell() + length)
-        if currentLexeme.type != LEXEME_KEYWORD or currentLexeme.value != b"endstream": 
+        currentLexeme = self.__lexer.move_at_position(self.__lexer.source.tell() + length)
+        if not isinstance(currentLexeme, PDFKeyword) or currentLexeme.value != b"endstream": 
             raise PDFSyntaxError("'stream' not matched with an 'endstream' keyword.")
         next(self.__lexer)
         return PDFStream(D, reader)

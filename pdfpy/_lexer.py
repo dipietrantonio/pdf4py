@@ -143,6 +143,11 @@ class Lexer:
     
 
     @property
+    def source(self):
+        return self.__source
+
+
+    @property
     def current_lexeme(self):
         """
         Returns the last parsed lexeme.
@@ -536,10 +541,11 @@ class Lexer:
             self.__advance()
             if self.__head != LINE_FEED:
                 self.__raise_lexer_error("Carriage return not followed by a line feed after 'stream' keyword.")
-        
         streamPos = self.__source.tell()
         # build a closure to read the stream later
         def read_stream(length):
+            oldEnded = self.__ended
+            self.__ended = False
             oldPos = self.__source.tell()
             self.__source.seek(streamPos, 0)
             data = self.__source.read(length)
@@ -548,7 +554,9 @@ class Lexer:
             if self.__head == LINE_FEED:
                 self.__advance()
             self.__source.seek(oldPos, 0)
+            self.__ended = oldEnded
             return data
+
         return PDFStreamReader(read_stream)
         
 

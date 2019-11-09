@@ -1,8 +1,8 @@
 # PDF 1.7 Standard Coverage
 
 In this file the progress in implementing all the features in the [PDF 1.7 standard](http://wwwimages.adobe.com/www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf) is tracked.
-As the development goes on, the various sections decribing features that have been supported
-will be marked with an check (✓) in the following table.
+As the development goes on, the various sections decribing features that have been supported will be marked with an check (✓) in the following table.
+The tilde mark (~) means almost every aspect is supported.
 
 ## Chapters 1 - 6
 
@@ -20,7 +20,7 @@ Nothing to implement here, just introductory stuff.
 | 7.3.5             | Name objects        | ✓                |
 | 7.3.6             | Array objects       | ✓                |
 | 7.3.7             | Dictionary objects  | ✓                |
-| 7.3.8             | Stream objects      | Refactoring      |
+| 7.3.8             | Stream objects      | ~ (F parameter not supported yet)     |
 | 7.3.9             | Null object         | ✓                |
 | 7.3.10            | Indirect objects    | Refactoring      |
 | 7.4               | Filters             | Minimal support  |
