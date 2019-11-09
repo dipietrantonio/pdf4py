@@ -228,7 +228,7 @@ class ParserUnitTests(unittest.TestCase):
 
 
     def test_parse_dictionary_object(self):
-        dictExample = b"""<< /Type /Example
+        dictExamples = [b"""<< /Type /Example
                             /Subtype /DictionaryExample
                             /Version 0.01
                             /IntegerItem 12
@@ -238,9 +238,16 @@ class ParserUnitTests(unittest.TestCase):
                                 /LastItem (not!)
                                 /VeryLastItem (OK)
                                 >>
-                            >>"""
+                            >>""",
+                            b"""<</Size 120
+                                /Root 119 0 R
+                                /Info 114 0 R
+                                /ID[<C49DFA7375A44BAA174802F645A8A459><C49DFA7375A44BAA174802F645A8A459>]
+                                >>"""
+        ]
+
         
-        dictCorrect = { 'Type': parpkg.PDFName(value='Example'),
+        dictCorrect = [{ 'Type': parpkg.PDFName(value='Example'),
                         'Subtype': parpkg.PDFName(value='DictionaryExample'),
                         'Version': 0.01, 
                         'IntegerItem': 12,
@@ -249,10 +256,20 @@ class ParserUnitTests(unittest.TestCase):
                                         'Item2': True,
                                         'LastItem': 'not!',
                                         'VeryLastItem': 'OK'}
-                        }
-        parser = parpkg.BaseParser(dictExample)
+                        },{
+                            "Size" : 120,
+                            "Root" : parpkg.PDFReference(119,0),
+                            "Info" : parpkg.PDFReference(114, 0),
+                            "ID" : [parpkg.PDFHexString(b"C49DFA7375A44BAA174802F645A8A459"), parpkg.PDFHexString(b"C49DFA7375A44BAA174802F645A8A459")]
+                        }]
+        
+        parser = parpkg.BaseParser(dictExamples[0])
         od = parser._parse_object()
-        self.assertEqual(dictCorrect, od)
+        self.assertEqual(dictCorrect[0], od)
+        parser = parpkg.BaseParser(dictExamples[1])
+        od = parser._parse_object()
+        self.assertEqual(dictCorrect[1], od)
+        
 
 
     def test_parse_indirect_object(self):

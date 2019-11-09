@@ -255,8 +255,7 @@ class XRefTable:
         if self.__sideObjStm is not None:
             pass # TODO do something
         if self.__previous is None:
-            logging.debug("Key not found: " + str(key))
-            raise KeyError()
+            raise KeyError("Key not found: " + str(key))
         else:
             return self.__previous[key]
         
@@ -358,7 +357,7 @@ class Parser(BaseParser):
         # now build a hierarchy of XrefTable instances
         self.xrefTable = None
         for xrefData in xrefs:
-            self.xrefTable = XRefTable(self.xrefTable, *xrefData)
+            self.xRefTable = XRefTable(self.xrefTable, *xrefData)
     
 
 

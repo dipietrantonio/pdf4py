@@ -426,7 +426,7 @@ class Lexer:
         """
         buffer = bytearray()
         self.__advance()
-        while ord('!') <= self.__head and self.__head <= ord('~'):
+        while ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
             if self.__head == NUMBER_SIGN:
                 self.__advance()
                 try:
