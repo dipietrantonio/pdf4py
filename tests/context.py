@@ -31,4 +31,3 @@ sys.path.insert(0, BASE_FOLDER)
 
 import pdfpy._lexer as lexpkg
 import pdfpy.parser as parpkg
-

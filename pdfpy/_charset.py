@@ -58,7 +58,7 @@ SINGLETONS = {
 
 # used to determine if a character is a regular character
 DELIMITERS = {OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, 
-    OPEN_PARENTHESIS, CLOSE_PARENTHESIS, FORWARD_SLASH, PERCENTAGE}
+    OPEN_PARENTHESIS, CLOSE_PARENTHESIS, FORWARD_SLASH, ord('<'), ord('>'), PERCENTAGE}
 
 # the order is important here! For example, you don't want "n" to comes before "null", otherwise the
 # latter will never be matched.

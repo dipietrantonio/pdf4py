@@ -34,16 +34,8 @@ from ._decoders import decode
 
 class PDFSyntaxError(Exception):
     """
-    When the parsed PDF does not conform to syntax rules.
+    Raised when the parsed PDF does not conform to syntax rules.
     """
-
-
-
-class PDFUnexpectedTokenError(PDFSyntaxError):
-    """
-    When the parser cannot recognise the grammar.
-    """
-
 
 
 class PDFUnsupportedError(Exception):
@@ -62,7 +54,9 @@ XrefCompressedEntry = namedtuple("XrefCompressedEntry", ["object_number", "objst
 
 
 class BaseParser:
-
+    """
+    A parser 
+    """
 
     def __init__(self, obj):
         """
@@ -101,7 +95,9 @@ class BaseParser:
             if isinstance(keyToken, PDFKeyword) and keyToken.value == b">>":
                 break
             elif not isinstance(keyToken, PDFName):
-                self._raise_syntax_error("Expecting dictionary key, but not found.")
+                self._raise_syntax_error("Expecting dictionary key, '{}' found instead.".format(keyToken))
+            logging.debug("Key found: " + str(keyToken.value))
+            
             # now get the value
             next(self._lexer)
             keyValue = self._parse_object()    
@@ -128,7 +124,7 @@ class BaseParser:
         if isinstance(length, PDFReference):
             key = (length.object_number, length.generation_number)
             try:
-                xrefEntity = self.xrefTable[key]
+                xrefEntity = self.xRefTable[key]
             except KeyError:
                 logging.warning("Reference to non-existing object.")
                 # TODO: now what?
@@ -225,12 +221,11 @@ class BaseParser:
 class XRefTable:
 
     def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set',
-            compressedObjects : 'dict' = None, sideObjStm = None):
+            compressedObjects : 'dict' = None):
         self.__inUseObjects = inUseObjects
         self.__freeObjects = freeObjects
         self.__compressedObjects = {} if compressedObjects is None else compressedObjects
         self.__previous = previous
-        self.__sideObjStm = sideObjStm
         
 
     @property
@@ -247,24 +242,51 @@ class XRefTable:
             return v
         if key in self.__freeObjects:
             return None
-        if self.__sideObjStm is not None:
-            pass # TODO do something
         if self.__previous is None:
             raise KeyError("Key not found: " + str(key))
         else:
             return self.__previous[key]
-        
+    
+    
+    def __iter__(self):      
+        def gen():
+            if self.previous is not None:
+                for item in iter(self.previous):
+                    if isinstance(item, XrefInUseEntry) and (item[1], item[2]) in self.__freeObjects:
+                        pass
+                    # TODO: understand how to delete compressed object (maybe it is not deleted at all)
+                    yield item
+            yield from self.__inUseObjects.values()
+            yield from self.__compressedObjects.values()
 
-    def active_keys(self):
-        if not hasattr(self, "__activeKeys"):
-            mykeys = list(self.__inUseObjects) + list(self.__compressedObjects)
-            if self.__previous is not None:
-                prevkeys = self.__previous.active_keys()
-                for k in prevkeys:
-                    if k not in self.__freeObjects:
-                        mykeys.append(k)
-            self.__activeKeys = mykeys
-        return self.__activeKeys
+        return gen()
+
+    
+    def __support_str_(self):
+
+        inUseObjs = "\n".join(
+            "{:10} {:5} {:10} n".format(x.object_number, x.generation_number, x.offset) for x in sorted(self.__inUseObjects.values())
+            )
+        freeObjs = "\n".join(
+            "{:10} {:5} f".format(x[0], x[1] + 1) for x in sorted(self.__freeObjects)
+            )
+        compressedObjs = "\n".join(
+            "{} {}".format(x[0], x[1]) for x in sorted(self.__compressedObjects.values())
+            )
+        
+        resultingString = "Section\nIn use objects:\n{}\nFree objects:\n{}\nCompressed objects:\n{}".format(
+            inUseObjs, freeObjs, compressedObjs)
+        
+        if self.__previous is not None:
+            prevString = self.__previous.__support_str_()
+            return prevString + "\n" + resultingString
+        else:
+            return resultingString
+
+
+    def __str__(self):
+        # TODO: build a better representation
+        return self.__support_str_()
 
 
 
@@ -272,43 +294,44 @@ class Parser(BaseParser):
 
     TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
-
     def __init__(self, obj):
         super().__init__(obj)
         self.__parse_xref_table()
 
 
     def parse_xref_entry(self, xrefEntry : 'PDFXrefEntity'):
+
         if isinstance(xrefEntry, XrefInUseEntry):
             logging.debug("Parsing InUseEntry {} ..".format(repr(xrefEntry)))
             self._lexer.move_at_position(xrefEntry.offset)
-            parsedObject = self.__parse_object()
+            parsedObject = self._parse_object()
             self._lexer.move_back()
             return parsedObject
+        
         elif isinstance(xrefEntry, XrefCompressedEntry):
             # now parse the object stream containing the object the entry refers to
             logging.debug("Parsing Compressed Entry {} ..".format(repr(xrefEntry)))
             try:
-                objStmRef = self.xrefTable[(xrefEntry.objstm_number, 0)]
+                objStmRef = self.xRefTable[(xrefEntry.objstm_number, 0)]
             except KeyError:
-                raise PDFSyntaxError("Couldn't find the object stream in the xref table.")
+                self._raise_syntax_error("Couldn't find the object stream in the xref table.")
             D, streamReader = self.parse_xref_entry(objStmRef).value
             stream = streamReader()
             prevLexer = self._lexer
-            self._lexer = Lexer(Seekable(stream))
+            self._lexer = Lexer(stream)
             obj = None
             for i in range(D["N"]):
-                n1 = next(self._lexer).value
-                n2 = next(self._lexer).value
+                n1 = next(self._lexer)
+                n2 = next(self._lexer)
                 if not(isinstance(n1, int) and isinstance(n2, int)):
-                    raise PDFSyntaxError("Expected integers in object stream.")
+                    self._raise_syntax_error("Expected integers in object stream.")
                 if n1 == xrefEntry.object_number:
                     offset = D["First"] + n2
                     self._lexer.move_at_position(offset)
-                    obj = self.__parse_object()
+                    obj = self._parse_object()
                     break
             if obj is None:
-                raise PDFSyntaxError("Compressed object not found.")
+                self._raise_syntax_error("Compressed object not found.")
             self._lexer = prevLexer
             return obj
         else:
@@ -319,14 +342,17 @@ class Parser(BaseParser):
         # fist, find xrefstart, starting from end of file
         xrefstartPos = self._lexer.rfind(b"startxref")
         if xrefstartPos < 0:
-            raise PDFSyntaxError("'startxref' keyword not found.")
+            self._raise_syntax_error("'startxref' keyword not found.")
+        # get the position of the latest xref section
         xrefPos = next(self._lexer)
+        # the following list will hold all the xref sections found in the PDF file.
         xrefs = []
+        self.trailer = dict()
         while xrefPos >= 0: # while there are xref to process
             currentLexeme = self._lexer.move_at_position(xrefPos)
             if isinstance(currentLexeme, PDFKeyword) and currentLexeme.value == b"xref":
                 logging.debug("Parsing an xref table..")
-                # then it is a normal xref table
+                # then it is a classic xref table, as opposed to xref streams
                 trailer, xrefData = self.__parse_xref_section()
                 xrefs.insert(0, xrefData)
                 # Check now if this is a PDF in compatibility mode where there is xref stream
@@ -349,66 +375,83 @@ class Parser(BaseParser):
                 del trailer["Prev"]
             else:
                 xrefPos = -1
-                self.__dict__.update(trailer)
+                self.trailer.update(trailer)
 
         # now build a hierarchy of XrefTable instances
-        self.xrefTable = None
+        self.xRefTable = None
         for xrefData in xrefs:
-            self.xRefTable = XRefTable(self.xrefTable, *xrefData)
+            self.xRefTable = XRefTable(self.xRefTable, *xrefData)
     
 
-
     def __parse_xref_stream(self):
-        o = self.__parse_object()
+        """
+        Beginning with PDF 1.5, cross-reference information may be stored in a cross-reference stream instead of in a
+        cross-reference table. Cross-reference streams provide the following advantages:
+            - A more compact representation of cross-reference information
+            - The ability to access compressed objects that are stored in object streams (see 7.5.7, "Object Streams")
+              and to allow new cross-reference entry types to be added in the future
+        """
+        logging.debug("Parsing a xref stream..")
+        o = self._parse_object()
         if not isinstance(o, PDFIndirectObject):
-            raise PDFSyntaxError("Expecting a 'xref' rection, but it has not been found.")
-        # TODO parse stream
+            self._raise_syntax_error("Expecting a 'xref' rection, but it has not been found.")
         if not isinstance(o.value, PDFStream):
-            raise PDFSyntaxError("Expecting a stream containing 'xref' information, but not found.")
+            self._raise_syntax_error("Expecting a stream containing 'xref' information, but not found.")
         objStmDict, objStm = o.value
         if objStmDict['Type'].value != 'XRef':
-            raise PDFSyntaxError("Expecting a stream containing 'xref' information, but not found.")
-        trailer = {k : objStmDict[k] for k in objStmDict if k in TRAILER_FIELDS}
+            self._raise_syntax_error("Expecting a stream containing 'xref' information, but not found.")
+        trailer = {k : objStmDict[k] for k in objStmDict if k in self.TRAILER_FIELDS}
+        # read the raw stream content
         xrefData = objStm()
-        pos = 0 # current position inside xrefData
-        # lets read the data
+        # current position inside xrefData
+        pos = 0
+        # retrieves info about xref stream layout
+        # TODO: support extends keyword
         size = objStmDict["Size"]
         index = objStmDict.get("Index", [0, size])
+        # An array of integers representing the size of the fields in a single cross-reference entry.
         w = [x for x in objStmDict["W"]]
+        # where data will be saved
         inUseObjects = dict()
         freeObjects = set()
         compressedObjects = dict()
+        # start parsing
         for i in range(0, len(index) - 1, 2):
             start, count = index[i], index[i+1]
+            # for each section..
             for j in range(count):
-                # parse the record of values
-                # skip object 0
+                # skip object 0, we will not used it
                 if start == 0 and j == 0:
                     pos += sum(w)
                     continue
-
+                # parse the current record in an array of three elements
                 vals = [None] * 3
                 for k in range(3):
                     if w[k] > 0:
                         vals[k] = sum([x << (w[k] - l - 1)*8 for l, x in enumerate(xrefData[pos:pos+w[k]])])
                         pos += w[k]
                 
-                # set default values
+                # set default values, based on the record type
                 if vals[0] is None:
                     vals[0] = 1
                 if vals[0] == 1 and vals[2] is None:
                     vals[2] = 0
                 
-                # process data
+                # transform the record into a higher level object
                 if vals[0] == 0:
+                    # type 0 is assigned to free objects. We will not keep the linked list structure (which is
+                    # redundant in our setting)
                     entry = (start + j, vals[2])
                     freeObjects.add(entry)
                 elif vals[0] == 1:
+                    # In use object
                     entry = XrefInUseEntry(vals[1], start + j, vals[2])
                     inUseObjects[(entry.object_number, entry.generation_number)] = entry
                 else:
+                    # it is a compressed object
                     entry = XrefCompressedEntry(start + j, vals[1], vals[2])
                     compressedObjects[(entry.object_number, 0)] = entry
+    
         return trailer, (inUseObjects, freeObjects, compressedObjects)
 
 
@@ -420,24 +463,24 @@ class Parser(BaseParser):
         while isinstance(self._lexer.current_lexeme, int):
             start = self._lexer.current_lexeme
             if not isinstance(start, int):
-                raise PDFSyntaxError("Expected the ID of the fist object in section.")
+                self._raise_syntax_error("Expected the ID of the fist object in section.")
             count = next(self._lexer)
             if not isinstance(count, int):
-                raise PDFSyntaxError("Expected the number of elements in the section.")
+                self._raise_syntax_error("Expected the number of elements in the section.")
             # read all records in subsection
             for i in range(count):
                 offsetToken = next(self._lexer)
                 if not isinstance(offsetToken, int):
-                    raise PDFSyntaxError("Expected 'offset' value for xref entry.")
+                    self._raise_syntax_error("Expected 'offset' value for xref entry.")
                 genNumberToken = next(self._lexer)
                 if not isinstance(genNumberToken, int):
-                    raise PDFSyntaxError("Expected 'generation_number' value for xref entry.")
+                    self._raise_syntax_error("Expected 'generation_number' value for xref entry.")
                 markerToken = next(self._lexer)
                 if not isinstance(markerToken, PDFSingleton) or markerToken.value not in [INUSE_ENTRY_KEYWORD, FREE_ENTRY_KEYWORD]:
-                    raise PDFSyntaxError("Expected 'in_use' specifier ('n' or 'f')")
+                    self._raise_syntax_error("Expected 'in_use' specifier ('n' or 'f')")
                 if start == 0 and i == 0:
                     continue # skip head of the free objects linked list  (will not be used)
-                if markerToken.value == b'n':
+                if markerToken.value == INUSE_ENTRY_KEYWORD:
                     xrefEntry = XrefInUseEntry(offsetToken, start + i, genNumberToken)
                     logging.debug("xref entry: {}".format(xrefEntry))
                     inUseObjects[(xrefEntry.object_number, xrefEntry.generation_number)] = xrefEntry
@@ -447,7 +490,7 @@ class Parser(BaseParser):
             next(self._lexer)
         # now there must be the trailer
         if not isinstance(self._lexer.current_lexeme, PDFKeyword) or self._lexer.current_lexeme.value != b'trailer':
-            raise PDFSyntaxError("Expecting 'trailer' section after 'xref' table.")
+            self._raise_syntax_error("Expecting 'trailer' section after 'xref' table.")
         next(self._lexer)
         trailer = self._parse_dictionary_or_stream()
         return trailer, (inUseObjects, freeObjects)

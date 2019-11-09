@@ -27,7 +27,14 @@ from .context import *
 import unittest
 import logging
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
+
+
+
+class ParseAnnexHSamplesTest(unittest.TestCase):
+    pass
+
+
 
 class ParseALatexPDFTest(unittest.TestCase):
 
@@ -35,15 +42,26 @@ class ParseALatexPDFTest(unittest.TestCase):
     def test_read_header(self):
         self.assertTrue(False, "Impement me!")
     
-    
-    def test(self):
+
+    def test_simple(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             parser = parpkg.Parser(fp)
             for pdfXrefEntry in parser.xRefTable:
-                parser.parse_xref_entry(pdfXrefEntry)
-
+                entity = parser.parse_xref_entry(pdfXrefEntry)
         self.assertFalse(True, "Implement me!")
 
+
+
+class ParseAllPDFs(unittest.TestCase):
+
+    def test_all_pdfs(self):
+
+        for pdfPath in os.listdir(PDFS_FOLDER):
+            with open(os.path.join(PDFS_FOLDER, pdfPath), "rb") as fp:
+                parser = parpkg.Parser(fp)
+                for pdfXrefEntry in parser.xRefTable:
+                    parser.parse_xref_entry(pdfXrefEntry)
+            
 
 if __name__ == "__main__":
     unittest.main()

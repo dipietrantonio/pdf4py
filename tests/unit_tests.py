@@ -298,21 +298,26 @@ class ParserTestCase(unittest.TestCase):
 
 
     def test_parse_xref_section(self):
-        xref = b"""
-        xref
-        0 6
-        0000000003 65535 f
-        0000000017 00000 n
-        0000000081 00000 n
-        0000000000 00007 f
-        0000000331 00000 n
-        0000000409 00000 n
-        """
-        parser = None
-        with self.assertRaises(parpkg.PDFSyntaxError):
-            # it raises an exeception because it cannot find "startxref"
-            parser = parpkg.Parser(xref)
-        
+        sample = b"""xref
+0 7
+0000000000 65535 f
+0000000009 00000 n
+0000000074 00000 n
+0000000120 00000 n
+0000000179 00000 n
+0000000300 00000 n
+0000000384 00000 n
+
+trailer
+    << /Size 7
+        /Root 1 0 R
+    >>
+startxref
+0
+%%EOF"""
+        parser = parpkg.Parser(sample)
+        parsedObjects = [(x.object_number, x.generation_number) for x in parser.xRefTable]
+        self.assertEqual(parsedObjects, [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)])
 
 
 if __name__ == "__main__":
