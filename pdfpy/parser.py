@@ -222,15 +222,10 @@ class BaseParser:
 
 
 
-TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
-
-
-
 class XRefTable:
 
     def __init__(self, previous : 'XRefTable', inUseObjects : 'dict', freeObjects : 'set',
             compressedObjects : 'dict' = None, sideObjStm = None):
-        
         self.__inUseObjects = inUseObjects
         self.__freeObjects = freeObjects
         self.__compressedObjects = {} if compressedObjects is None else compressedObjects
@@ -274,6 +269,8 @@ class XRefTable:
 
 
 class Parser(BaseParser):
+
+    TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
 
     def __init__(self, obj):

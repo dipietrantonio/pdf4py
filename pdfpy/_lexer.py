@@ -177,13 +177,16 @@ class Lexer:
             buff.clear()
             while count <= self.__length:
                 self.__source.seek(self.__length - count, 0)
-                c = self.__source.read(1)
+                c = self.__source.read(1)[0]
                 count += 1
-                if c[0] not in [CARRIAGE_RETURN, LINE_FEED]:
-                    buff.extend(c)
+                if c not in [CARRIAGE_RETURN, LINE_FEED]:
+                    buff.append(c)
                 else:
                     break
-            if count > self.__length and c[0] not in [CARRIAGE_RETURN, LINE_FEED]:
+            if c in [CARRIAGE_RETURN, LINE_FEED]:
+                c = None
+                continue
+            if count > self.__length:
                 return -1
         pos = self.__source.tell()
         self.__advance()

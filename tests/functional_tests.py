@@ -25,10 +25,17 @@ SOFTWARE.
 
 from .context import *
 import unittest
+import logging
 
+logging.basicConfig(level=logging.DEBUG)
 
 class ParseALatexPDFTest(unittest.TestCase):
 
+
+    def test_read_header(self):
+        self.assertTrue(False, "Impement me!")
+    
+    
     def test(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             parser = parpkg.Parser(fp)

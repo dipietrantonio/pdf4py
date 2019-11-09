@@ -204,7 +204,7 @@ class SeekableTestCase(unittest.TestCase):
 
 
 
-class ParserUnitTests(unittest.TestCase):
+class BaseParserUnitTests(unittest.TestCase):
 
 
     def testcreation(self):
@@ -291,6 +291,28 @@ endobj"""
         di = obj.value
         self.assertIsInstance(di, parpkg.PDFStream)
         self.assertEqual(b"abc", di.stream())
+
+
+
+class ParserTestCase(unittest.TestCase):
+
+
+    def test_parse_xref_section(self):
+        xref = b"""
+        xref
+        0 6
+        0000000003 65535 f
+        0000000017 00000 n
+        0000000081 00000 n
+        0000000000 00007 f
+        0000000331 00000 n
+        0000000409 00000 n
+        """
+        parser = None
+        with self.assertRaises(parpkg.PDFSyntaxError):
+            # it raises an exeception because it cannot find "startxref"
+            parser = parpkg.Parser(xref)
+        
 
 
 if __name__ == "__main__":
