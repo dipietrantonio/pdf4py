@@ -55,6 +55,7 @@ class ParseALatexPDFTest(unittest.TestCase):
 
 class ParseAllPDFs(unittest.TestCase):
 
+
     def test_all_pdfs(self):
 
         for pdfPath in os.listdir(PDFS_FOLDER):
@@ -66,6 +67,15 @@ class ParseAllPDFs(unittest.TestCase):
                         x = x.value
                     if isinstance(x, parpkg.PDFStream):
                         x.stream()
+
+
+
+class DocumentTestCase(unittest.TestCase):
+
+    def test_print_document_catalog(self):
+        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
+            myPdfDoc = docpkg.Document(fp)
+            self.assertEqual(len(myPdfDoc.pages), 10)
 
 if __name__ == "__main__":
     unittest.main()

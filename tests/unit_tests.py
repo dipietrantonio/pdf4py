@@ -229,6 +229,16 @@ startxref
         self.assertEqual(parsedObjects, [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)])
 
 
+
+
+class DocumentTestCase(unittest.TestCase):
+
+    def test_document_catalog(self):
+        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
+            myPdfDoc = docpkg.Document(fp)
+            self.assertIn("Pages", myPdfDoc.catalog)
+    
+    
 if __name__ == "__main__":
     unittest.main()
 

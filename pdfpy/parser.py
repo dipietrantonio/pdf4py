@@ -295,8 +295,11 @@ class Parser:
         raise self._raise_syntax_error("Unexpected lexeme encountered ({}).".format(self._lexer.current_lexeme))
 
 
-    def parse_xref_entry(self, xrefEntry : 'PDFXrefEntity'):
-
+    def parse_xref_entry(self, xrefEntry):
+        # TODO: find proper name to this method
+        if isinstance(xrefEntry, PDFReference):
+            xrefEntry = self.xRefTable[xrefEntry]
+        
         if isinstance(xrefEntry, XrefInUseEntry):
             logging.debug("Parsing InUseEntry {} ..".format(repr(xrefEntry)))
             self._lexer.move_at_position(xrefEntry.offset)

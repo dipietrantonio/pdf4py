@@ -22,13 +22,28 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+from .parser import Parser
 
-import os
-import sys
-BASE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "pdfs")
-sys.path.insert(0, BASE_FOLDER)
 
-import pdfpy._lexer as lexpkg
-import pdfpy.parser as parpkg
-import pdfpy.document as docpkg
+class Document:
+
+    def __init__(self, source):
+        self._parser = Parser(source)
+        self._read_catalog()
+    
+
+    def _read_catalog(self):
+        catalogRef = self._parser.trailer["Root"]
+        self.catalog = self._parser.parse_xref_entry(catalogRef).value
+        self.pages = list()
+        self.__retrieve_pages(self.catalog["Pages"])
+  
+
+    def __retrieve_pages(self, item):
+        itemDict = self._parser.parse_xref_entry(item).value
+        if itemDict["Type"].value == "Pages":
+            for kid in itemDict["Kids"]:
+                self.__retrieve_pages(kid)
+        else:
+            self.pages.append(itemDict)
+        
