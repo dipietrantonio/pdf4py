@@ -21,8 +21,29 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from .parser import *
+from ._lexer import Lexer
 
-from .parser import Parser
+class ContentStream:
+
+    def __init__(self, obj):
+
+        if isinstance(obj, list):
+            pass
+        elif isinstance(obj, PDFStream):
+            pass
+        else:
+            raise PDFSyntaxError("A ContentStream must be an array or a stream.")
+
+
+
+class Page:
+
+    def __init__(self, page_dict : 'dict', parent : 'Document'):
+        # init page here
+        if 'Contents' in page_dict:
+            self.contents = ContentStream(page_dict['Contents'])
+        
 
 
 class Document:
