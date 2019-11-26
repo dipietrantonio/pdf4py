@@ -203,6 +203,22 @@ class SeekableTestCase(unittest.TestCase):
         self.assertEqual(v, aSequenceOfBytes[-3:])
 
 
+
+class BasicParserTestCase(unittest.TestCase):
+
+
+    def test_parse_simple_sequence(self):
+        sequence = b"\n".join(pdfParts[:2] + pdfParts[3:])
+        par = parpkg.BasicParser(sequence)
+        lpar = list(par)
+        self.assertEqual(lpar, [346, 123, True, False, 123, 43445, 17, -98, 0,
+            34.5, -3.62, 123.6, 4.0, -0.002, 0.0, " This is a string ", """Strings may contain newlines
+ and such.""", """Strings may contain balanced parentheses ( ) and\n special characters ( * ! & } ^ % and so on).""",
+"The following is an empty string.", "", "It has zero (0) length.", "These \ntwo strings \nare the same.", 
+"These \ntwo strings \nare the same.", "a backslash is ignored", "This string contains ¥two octal charactersÇ.","\0053",
+"+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E'))])
+
+
 class ParserTestCase(unittest.TestCase):
 
 

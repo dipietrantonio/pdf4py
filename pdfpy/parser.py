@@ -25,7 +25,6 @@ SOFTWARE.
 
 import logging
 from collections import namedtuple
-from functools import partial
 from contextlib import suppress
 from ._lexer import *
 from ._decoders import decode
@@ -133,6 +132,11 @@ class BasicParser:
         # read the header
         self._lexer = Lexer(source)
         self._stream_reader = stream_reader
+        self.__ended = False
+        try:
+            next(self._lexer)
+        except StopIteration:
+            self.__ended = True
         
 
     def _raise_syntax_error(self, msg):
@@ -154,6 +158,9 @@ class BasicParser:
         """
         Parse a generic PDF object.
         """
+        if self.__ended:
+            raise StopIteration()
+
         if isinstance(self._lexer.current_lexeme, PDFSingleton) and self._lexer.current_lexeme.value == OPEN_SQUARE_BRACKET:
             # it is a list of objects
             next(self._lexer)
@@ -163,8 +170,11 @@ class BasicParser:
                     break
                 L.append(self.parse_object())
             # we have successfully parsed a list
-            with suppress(StopIteration):
-                next(self._lexer) # remove CLOSE_SQUARE_BRAKET token stream from stream
+            # remove CLOSE_SQUARE_BRAKET token stream from stream
+            try:
+                next(self._lexer)
+            except StopIteration:
+                self.__ended = True
             return L
         
         
@@ -190,6 +200,7 @@ class BasicParser:
                 try:
                     nextLexeme = next(self._lexer)
                 except StopIteration:
+                    self.__ended = True
                     return D
                 
                 if not isinstance(self._lexer.current_lexeme, PDFStreamReader):
@@ -210,14 +221,18 @@ class BasicParser:
                 return PDFStream(D, reader)
   
             elif keywordVal == b"null":
-                with suppress(StopIteration):
+                try:
                     next(self._lexer)
+                except StopIteration:
+                    self.__ended = True
                 return None
 
         elif self._lexer.current_lexeme.__class__ in [PDFHexString, str, bool, float, PDFName]:
             s = self._lexer.current_lexeme
-            with suppress(StopIteration):
+            try:
                 next(self._lexer)
+            except StopIteration:
+                self.__ended = True
             return s
 
         elif isinstance(self._lexer.current_lexeme, int):
@@ -227,6 +242,7 @@ class BasicParser:
             try:
                 lex2 = next(self._lexer)
             except StopIteration:
+                self.__ended = True
                 return lex1
 
             if not isinstance(lex2, int):
@@ -235,11 +251,14 @@ class BasicParser:
             try:
                 lex3 = next(self._lexer)
             except StopIteration:
+                self.__ended = True
                 return lex1
         
             if isinstance(lex3, PDFSingleton) and lex3.value == KEYWORD_REFERENCE:
-                with suppress(StopIteration):
+                try:
                     next(self._lexer)
+                except StopIteration:
+                    self.__ended = True
                 return PDFReference(lex1, lex2)
             
             elif isinstance(lex3, PDFKeyword) and lex3.value == b"obj":
@@ -247,8 +266,10 @@ class BasicParser:
                 o = self.parse_object()
                 if not isinstance(self._lexer.current_lexeme, PDFKeyword) or self._lexer.current_lexeme.value != b"endobj":
                     self._raise_syntax_error("Expecting matching 'endobj' for 'obj', but not found.")
-                with suppress(StopIteration):
+                try:
                     next(self._lexer)
+                except StopIteration:
+                    self.__ended = True
                 return PDFIndirectObject(lex1, lex2, o)
             
             else:
