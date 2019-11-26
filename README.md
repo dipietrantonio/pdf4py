@@ -1,6 +1,7 @@
-# PDFPY
+# pdf4py
 
-A PDF parser written in Python 3.
+A PDF parser written in Python 3 with no external dependencies.
+
 
 ## Standard coverage
 
