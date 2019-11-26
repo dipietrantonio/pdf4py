@@ -29,6 +29,6 @@ BASE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "pdfs")
 sys.path.insert(0, BASE_FOLDER)
 
-import pdfpy._lexer as lexpkg
-import pdfpy.parser as parpkg
-import pdfpy.document as docpkg
+import pdf4py._lexer as lexpkg
+import pdf4py.parser as parpkg
+import pdf4py.document as docpkg

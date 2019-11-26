@@ -219,6 +219,37 @@ class BasicParserTestCase(unittest.TestCase):
 "+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E'))])
 
 
+    def test_parse_dictionary(self):
+
+        dictExample = b"""
+        << /Type /Example
+            /Subtype /DictionaryExample
+            /Version 0.01
+            /IntegerItem 12
+            /StringItem (a string)
+            /Subdictionary << /Item1 0.4
+                /Item2 true
+                /LastItem (not!)
+                /VeryLastItem (OK)
+            >>
+        >>"""
+
+        dictCorrectParsed = {
+            "Type" : lexpkg.PDFName("Example"),
+            "Subtype" : lexpkg.PDFName("DictionaryExample"),
+            "Version" : 0.01,
+            "IntegerItem" : 12,
+            "StringItem" : "a string",
+            "Subdictionary" : {
+                "Item1" : 0.4, "Item2" : True, "LastItem" :"not!", "VeryLastItem" : "OK"
+            }
+        }
+
+        par = parpkg.BasicParser(dictExample)
+        item = next(par)
+        self.assertEqual(item, dictCorrectParsed)
+
+
 class ParserTestCase(unittest.TestCase):
 
 
