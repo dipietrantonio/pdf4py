@@ -39,12 +39,14 @@ class ParseAnnexHSamplesTest(unittest.TestCase):
 class ParseALatexPDFTest(unittest.TestCase):
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_read_header(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             parser = parpkg.Parser(fp)
             self.assertEqual(parser.version, "PDF-1.4")
     
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_simple(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             parser = parpkg.Parser(fp)
@@ -56,6 +58,7 @@ class ParseALatexPDFTest(unittest.TestCase):
 class ParseAllPDFs(unittest.TestCase):
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_all_pdfs(self):
 
         for pdfPath in os.listdir(PDFS_FOLDER):

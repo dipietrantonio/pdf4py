@@ -128,11 +128,17 @@ class Lexer:
         self.__source.seek(0, 2)
         self.__length = self.__source.tell()
         self.__source.seek(cpos, 0)
-        self.__head = self.__source.read(1)[0]
+        self.__head = self.__source.read(1)
+        if self.__head == b"":
+            self.__head = ord(' ')
+            self.__ended = True
+        else:
+            self.__ended = False
+            self.__head = self.__head[0]
+
         self.__lexemesBuffer = list()
         self.__movesHistory = list()
         self.__contextSize = contextSize
-        self.__ended = False
         self.__currentLexeme = None
     
 

@@ -32,3 +32,6 @@ sys.path.insert(0, BASE_FOLDER)
 import pdf4py._lexer as lexpkg
 import pdf4py.parser as parpkg
 import pdf4py.document as docpkg
+
+
+RUN_ALL_TESTS = True

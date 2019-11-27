@@ -550,6 +550,8 @@ class Parser:
         
         def completeReader():
             data = reader(length)
+            if isinstance(data, memoryview):
+                data = bytes(data)
             return decode(D, {}, data)
         
         return length, completeReader

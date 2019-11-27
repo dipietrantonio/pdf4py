@@ -72,6 +72,7 @@ class LexerUnitTest(unittest.TestCase):
     Tests the Lexer class.
     """
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_lexer_creation(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             lex = lexpkg.Lexer(fp)
@@ -79,6 +80,7 @@ class LexerUnitTest(unittest.TestCase):
 
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_read_only_comment_source(self):
         lex = lexpkg.Lexer(pdfParts[0])
         try:
@@ -89,6 +91,7 @@ class LexerUnitTest(unittest.TestCase):
             """
     
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_tokens_mixed_with_comment(self):
         lex = lexpkg.Lexer(pdfParts[1])
         a = next(lex)
@@ -97,6 +100,7 @@ class LexerUnitTest(unittest.TestCase):
         self.assertEqual(b, 123)
     
     
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_invalid_input_and_context_print(self):
         lex = lexpkg.Lexer(pdfParts[2], 31)
         try:
@@ -106,6 +110,7 @@ class LexerUnitTest(unittest.TestCase):
             self.assertIn("40", msg)
     
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_boolean_parsing(self):
         lex = lexpkg.Lexer(pdfParts[3], 31)
         t, f = next(lex), next(lex)
@@ -113,16 +118,19 @@ class LexerUnitTest(unittest.TestCase):
         self.assertEqual(f, False)
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_integer_parsing(self):
         lex = lexpkg.Lexer(pdfParts[4])
         self.assertEqual([123, 43445, +17, -98, 0], list(lex))
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_real_parsing(self):
         lex = lexpkg.Lexer(pdfParts[5])
         self.assertEqual([34.5, -3.62, +123.6, 4., -.002, 0.0], list(lex))
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_string_literal(self):
         lex = lexpkg.Lexer(pdfParts[6])
         strings = [" This is a string ",
@@ -146,6 +154,7 @@ class LexerUnitTest(unittest.TestCase):
         self.assertEqual(next(lex), next(lex))
         
     
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_hex_string(self):
         
         lex = lexpkg.Lexer(pdfParts[11])
@@ -154,6 +163,7 @@ class LexerUnitTest(unittest.TestCase):
         self.assertEqual(unhexlify(b"4E6F762073686D6F7A206B6120706F702E"), unhexlify(item.value))
  
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_name(self):
         for x in validNames:
             lex = lexpkg.Lexer(x)
@@ -162,6 +172,7 @@ class LexerUnitTest(unittest.TestCase):
             self.assertEqual(tok.value, validNames[x])
     
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_keywords(self):
         istream = b"R n null n false f << endobj obj >> trailer xref startxref { } [ ]"
         checkVals = [lexpkg.KEYWORD_REFERENCE, lexpkg.INUSE_ENTRY_KEYWORD, b"null", 
@@ -178,6 +189,7 @@ class LexerUnitTest(unittest.TestCase):
 class SeekableTestCase(unittest.TestCase):
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_seekable_class(self):
         aSequenceOfBytes = b"This is a sequence of bytes."
 
@@ -207,6 +219,7 @@ class SeekableTestCase(unittest.TestCase):
 class BasicParserTestCase(unittest.TestCase):
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_simple_sequence(self):
         sequence = b"\n".join(pdfParts[:2] + pdfParts[3:])
         par = parpkg.BasicParser(sequence)
@@ -219,6 +232,7 @@ class BasicParserTestCase(unittest.TestCase):
 "+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E'))])
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_dictionary(self):
 
         dictExample = b"""
@@ -250,9 +264,46 @@ class BasicParserTestCase(unittest.TestCase):
         self.assertEqual(item, dictCorrectParsed)
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_parse_indirect_object_and_indirect_reference(self):
+        data = b"12 0 obj ( Brillig ) endobj 12 0 R"
+        par = parpkg.BasicParser(data)
+        item1 = next(par)
+        item2 = par.parse_object()
+        self.assertIsInstance(item1, parpkg.PDFIndirectObject)
+        self.assertEqual(item1.value, " Brillig ")
+        self.assertIsInstance(item2, parpkg.PDFReference)
+
+
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_parse_stream(self):
+        sourceStream = b"""28 0 obj
+<<
+/Length 34
+>>
+stream
+this is the content of the stream.
+endstream
+endobj
+"""
+        par = parpkg.BasicParser(sourceStream, lambda D, read : (D["Length"], lambda : read(D["Length"])))
+        item = next(par)
+        val = bytes(item.value.stream())
+        self.assertEqual(val, b"this is the content of the stream.")
+
+
+    def test_parse_empty_input(self):
+        par = parpkg.BasicParser(b"")
+        with self.assertRaises(StopIteration):
+            next(par)
+
+
+
+
 class ParserTestCase(unittest.TestCase):
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_xref_section(self):
         sample = b"""xref
 0 7
@@ -280,6 +331,7 @@ startxref
 
 class DocumentTestCase(unittest.TestCase):
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_document_catalog(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             myPdfDoc = docpkg.Document(fp)
