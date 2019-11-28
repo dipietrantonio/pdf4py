@@ -52,8 +52,7 @@ NUMBER_SIGN = ord('#')
 
 # singletons are lexemes composed by only one character.
 SINGLETONS = {
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, INUSE_ENTRY_KEYWORD,
-    FREE_ENTRY_KEYWORD, KEYWORD_REFERENCE
+    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET
 }
 
 # used to determine if a character is a regular character
@@ -63,7 +62,7 @@ DELIMITERS = {OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE
 # the order is important here! For example, you don't want "n" to comes before "null", otherwise the
 # latter will never be matched.
 KEYWORDS = [
-    b"endobj", b"obj", b"trailer", b"xref", b"startxref", b"endstream"
+    b"endobj", b"obj", b"trailer",  b"xref", b"startxref", b"endstream"
 ]
 
 

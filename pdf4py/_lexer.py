@@ -104,7 +104,7 @@ class Lexer:
     the input sequence to allow lazy parsing (i.e. to parse only the required lexemes). 
     """
 
-    def __init__(self, source, parse_operator = False, contextSize = 200):
+    def __init__(self, source, contextSize = 200):
         """
         Creates a new instance of a PDF lexical analyzer associated to the given source sequence of
         bytes.
@@ -126,11 +126,6 @@ class Lexer:
         else:
             raise ValueError("The parser is given an invalid source of bytes.")
         
-        self.__parse_operator = parse_operator
-        if parse_operator:
-            self.__SINGLETONS = [x for x in SINGLETONS if x not in [KEYWORD_REFERENCE, INUSE_ENTRY_KEYWORD, FREE_ENTRY_KEYWORD]]
-        else:
-            self.__SINGLETONS = [x for x in SINGLETONS if x not in [OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET]]
         cpos = self.__source.tell()
         self.__source.seek(0, 2)
         self.__length = self.__source.tell()
@@ -635,7 +630,7 @@ class Lexer:
         elif self.__extract_literal(b"false"):
             self.__current_lexeme = False
         
-        elif not self.__parse_operator and self.__extract_literal(b"stream"):
+        elif self.__extract_literal(b"stream"):
             self.__current_lexeme = self.__extract_stream_reader()
 
         elif self.__extract_literal(b"<<"):
@@ -647,16 +642,18 @@ class Lexer:
         elif self.__extract_literal(b"null"):
             self.__current_lexeme = None
         
-        elif not self.__parse_operator and self.__extract_keyword():
+        elif self.__extract_keyword():
             # self.__current_lexeme is set inside the called function
             pass
         
-        elif self.__head in self.__SINGLETONS:
+        elif self.__head in SINGLETONS:
             self.__current_lexeme = PDFSingleton(self.__head)
             self.__advance()
         
-        # elif ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
-        #     pass
+        elif ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
+            item = self.__extract_name_or_operator()
+            self.__current_lexeme = PDFOperator(item)
+            
         else:
             # If the input bytes sequence prefix doesn't match anything known, then...
             raise self.__raise_lexer_error("Invalid characters sequence in input stream.")

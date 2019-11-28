@@ -104,12 +104,8 @@ class LexerUnitTest(unittest.TestCase):
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_invalid_input_and_context_print(self):
         lex = lexpkg.Lexer(pdfParts[2], 31)
-        try:
-            a = next(lex)
-        except lexpkg.PDFLexicalError as e:
-            msg = str(e)
-            self.assertIn("40", msg)
-    
+        self.assertIsInstance(next(lex), parpkg.PDFOperator)
+        
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_boolean_parsing(self):
@@ -175,8 +171,7 @@ class LexerUnitTest(unittest.TestCase):
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_keywords(self):
         istream = b"R n null n false f << endobj obj >> trailer xref startxref [ ]"
-        checkVals = [lexpkg.KEYWORD_REFERENCE, lexpkg.INUSE_ENTRY_KEYWORD, None, 
-            lexpkg.INUSE_ENTRY_KEYWORD, False, lexpkg.FREE_ENTRY_KEYWORD, b"<<",
+        checkVals = ["R",'n', None, 'n', False, 'f', b"<<",
             b"endobj", b"obj", b">>", b"trailer", b"xref", b"startxref",
             lexpkg.OPEN_SQUARE_BRACKET, lexpkg.CLOSE_SQUARE_BRACKET]
         
@@ -306,7 +301,7 @@ endobj
             ET"""
         with self.assertRaises(parpkg.PDFSyntaxError):
             list(parpkg.BasicParser(contentStream))
-        par = parpkg.BasicParser(contentStream, content_stream = True)
+        par = parpkg.BasicParser(contentStream, content_stream_mode = True)
         parsed = list(par)
         expected = [parpkg.PDFOperator("BT"), parpkg.PDFName("F1"), 12, parpkg.PDFOperator("Tf"), 72, 
             712, parpkg.PDFOperator("Td"), "A stream with an indirect length", parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]

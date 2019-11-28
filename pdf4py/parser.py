@@ -122,7 +122,7 @@ class XRefTable:
 class BasicParser:
 
 
-    def __init__(self, source, stream_reader = None):
+    def __init__(self, source, stream_reader = None, content_stream_mode = False):
         """
         Initialize the parser by setting the underlying lexical analyzer and load the fist lexeme.
         From now on the following invariant must be kept: before any call the to BaseParser._parse_object
@@ -133,6 +133,7 @@ class BasicParser:
         self._lexer = Lexer(source)
         self._stream_reader = stream_reader
         self.__ended = False
+        self.__content_stream_mode = content_stream_mode
         try:
             next(self._lexer)
         except StopIteration:
@@ -251,7 +252,7 @@ class BasicParser:
                 self.__ended = True
                 return lex1
         
-            if isinstance(lex3, PDFSingleton) and lex3.value == KEYWORD_REFERENCE:
+            if isinstance(lex3, PDFOperator) and lex3.value == "R":
                 try:
                     next(self._lexer)
                 except StopIteration:
@@ -274,6 +275,14 @@ class BasicParser:
                 self._lexer.undo_next(lex2)
                 return lex1
         
+        elif isinstance(self._lexer.current_lexeme, PDFOperator) and self.__content_stream_mode:
+                val = self._lexer.current_lexeme
+                try:
+                    next(self._lexer)
+                except StopIteration:
+                    self.__ended = True
+                return val
+
         # if the execution arrived here, it means that there is a syntax error.
         raise self._raise_syntax_error("Unexpected lexeme encountered ({}).".format(self._lexer.current_lexeme))
 
@@ -498,11 +507,11 @@ class Parser:
                 if not isinstance(genNumberToken, int):
                     self._basic_parser._raise_syntax_error("Expected 'generation_number' value for xref entry.")
                 markerToken = next(self._basic_parser._lexer)
-                if not isinstance(markerToken, PDFSingleton) or markerToken.value not in [INUSE_ENTRY_KEYWORD, FREE_ENTRY_KEYWORD]:
+                if not isinstance(markerToken, PDFOperator) or markerToken.value not in ["n", "f"]:
                     self._basic_parser._raise_syntax_error("Expected 'in_use' specifier ('n' or 'f')")
                 if start == 0 and i == 0:
                     continue # skip head of the free objects linked list  (will not be used)
-                if markerToken.value == INUSE_ENTRY_KEYWORD:
+                if markerToken.value == "n":
                     xrefEntry = XrefInUseEntry(offsetToken, start + i, genNumberToken)
                     logging.debug("xref entry: {}".format(xrefEntry))
                     inUseObjects[(xrefEntry.object_number, xrefEntry.generation_number)] = xrefEntry
