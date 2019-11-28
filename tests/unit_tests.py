@@ -48,6 +48,7 @@ pdfParts = [
     rb"(This string contains \245two octal characters\307.)", # test octal strings
     rb"(\0053) (\053) (\53)", # test octal strings 2
     rb"<4 E6F762073686D 6F7A206B6120706F702E>", # hex string
+    b"null",
 ]
 
 
@@ -156,7 +157,6 @@ class LexerUnitTest(unittest.TestCase):
     
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_hex_string(self):
-        
         lex = lexpkg.Lexer(pdfParts[11])
         item = next(lex)
         self.assertIsInstance(item, lexpkg.PDFHexString)
@@ -174,15 +174,15 @@ class LexerUnitTest(unittest.TestCase):
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_keywords(self):
-        istream = b"R n null n false f << endobj obj >> trailer xref startxref { } [ ]"
-        checkVals = [lexpkg.KEYWORD_REFERENCE, lexpkg.INUSE_ENTRY_KEYWORD, b"null", 
+        istream = b"R n null n false f << endobj obj >> trailer xref startxref [ ]"
+        checkVals = [lexpkg.KEYWORD_REFERENCE, lexpkg.INUSE_ENTRY_KEYWORD, None, 
             lexpkg.INUSE_ENTRY_KEYWORD, False, lexpkg.FREE_ENTRY_KEYWORD, b"<<",
-            b"endobj", b"obj", b">>", b"trailer", b"xref", b"startxref", 
-            lexpkg.OPEN_CURLY_BRACKET, lexpkg.CLOSE_CURLY_BRAKET,
+            b"endobj", b"obj", b">>", b"trailer", b"xref", b"startxref",
             lexpkg.OPEN_SQUARE_BRACKET, lexpkg.CLOSE_SQUARE_BRACKET]
         
         lex = lexpkg.Lexer(istream)     
-        self.assertEqual([x if isinstance(x, bool) else x.value for x in list(lex)], checkVals)
+        ll = list(lex)
+        self.assertEqual([x if (isinstance(x, bool) or x is None) else x.value for x in ll], checkVals)
 
 
 
@@ -229,7 +229,7 @@ class BasicParserTestCase(unittest.TestCase):
  and such.""", """Strings may contain balanced parentheses ( ) and\n special characters ( * ! & } ^ % and so on).""",
 "The following is an empty string.", "", "It has zero (0) length.", "These \ntwo strings \nare the same.", 
 "These \ntwo strings \nare the same.", "a backslash is ignored", "This string contains ¥two octal charactersÇ.","\0053",
-"+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E'))])
+"+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E')), None])
 
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
@@ -291,14 +291,26 @@ endobj
         val = bytes(item.value.stream())
         self.assertEqual(val, b"this is the content of the stream.")
 
-
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_empty_input(self):
         par = parpkg.BasicParser(b"")
         with self.assertRaises(StopIteration):
             next(par)
 
-
-
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_parse_content_stream(self):
+        contentStream = b"""BT
+            /F1 12 Tf
+            72 712 Td
+            (A stream with an indirect length) Tj
+            ET"""
+        with self.assertRaises(parpkg.PDFSyntaxError):
+            list(parpkg.BasicParser(contentStream))
+        par = parpkg.BasicParser(contentStream, content_stream = True)
+        parsed = list(par)
+        expected = [parpkg.PDFOperator("BT"), parpkg.PDFName("F1"), 12, parpkg.PDFOperator("Tf"), 72, 
+            712, parpkg.PDFOperator("Td"), "A stream with an indirect length", parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
+        self.assertEqual(parsed, expected)
 
 class ParserTestCase(unittest.TestCase):
 

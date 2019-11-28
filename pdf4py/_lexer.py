@@ -40,6 +40,8 @@ PDFKeyword = namedtuple("PDFKeyword", ["value"])
 PDFHexString = namedtuple("PDFHexString", ["value"])
 PDFSingleton = namedtuple("PDFSingleton", ["value"])
 PDFStreamReader = namedtuple("PDFStreamReader", ["value"])
+PDFOperator = namedtuple("PDFOperator", ["value"])
+PDFDictDelimiter = namedtuple("PDFDictDelimiter", ["value"])
 
 class Seekable:
     """
@@ -102,7 +104,7 @@ class Lexer:
     the input sequence to allow lazy parsing (i.e. to parse only the required lexemes). 
     """
 
-    def __init__(self, source, contextSize = 200):
+    def __init__(self, source, parse_operator = False, contextSize = 200):
         """
         Creates a new instance of a PDF lexical analyzer associated to the given source sequence of
         bytes.
@@ -124,6 +126,11 @@ class Lexer:
         else:
             raise ValueError("The parser is given an invalid source of bytes.")
         
+        self.__parse_operator = parse_operator
+        if parse_operator:
+            self.__SINGLETONS = [x for x in SINGLETONS if x not in [KEYWORD_REFERENCE, INUSE_ENTRY_KEYWORD, FREE_ENTRY_KEYWORD]]
+        else:
+            self.__SINGLETONS = [x for x in SINGLETONS if x not in [OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET]]
         cpos = self.__source.tell()
         self.__source.seek(0, 2)
         self.__length = self.__source.tell()
@@ -139,7 +146,7 @@ class Lexer:
         self.__lexemesBuffer = list()
         self.__movesHistory = list()
         self.__contextSize = contextSize
-        self.__currentLexeme = None
+        self.__current_lexeme = None
     
 
     @property
@@ -152,7 +159,7 @@ class Lexer:
         """
         Returns the last parsed lexeme.
         """
-        return self.__currentLexeme
+        return self.__current_lexeme
     
 
     def rfind(self, keyword : 'bytes'):
@@ -288,7 +295,7 @@ class Lexer:
         if len(self.__movesHistory) == 0:
             raise Exception("No move in history")
         prevLex, prevPos = self.__movesHistory.pop()
-        self.__currentLexeme = prevLex
+        self.__current_lexeme = prevLex
         self.__source.seek(prevPos - 1, 0)
         self.__advance()
 
@@ -418,7 +425,7 @@ class Lexer:
         return PDFHexString(buffer)
 
             
-    def __extract_name(self):
+    def __extract_name_or_operator(self):
         """
         Extracts a PDF name object from the input bytes sequence.
 
@@ -428,7 +435,6 @@ class Lexer:
         True if successful, False otherwise.
         """
         buffer = bytearray()
-        self.__advance()
         while ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
             if self.__head == NUMBER_SIGN:
                 self.__advance()
@@ -443,7 +449,7 @@ class Lexer:
             else:
                 buffer.append(self.__head)
             self.__advance()
-        return PDFName(buffer.decode('ascii'))
+        return buffer.decode('ascii')
 
 
     def __extract_number(self, startsWithNumber):
@@ -523,7 +529,7 @@ class Lexer:
         """
         for k in KEYWORDS:
             if self.__extract_literal(k):
-                self.__currentLexeme = PDFKeyword(k)
+                self.__current_lexeme = PDFKeyword(k)
                 return True
         else:
             return False
@@ -599,49 +605,63 @@ class Lexer:
         """
 
         if len(self.__lexemesBuffer) > 0:
-            self.__currentLexeme = self.__lexemesBuffer.pop()
-            return self.__currentLexeme
+            self.__current_lexeme = self.__lexemesBuffer.pop()
+            return self.__current_lexeme
 
         self.__remove_blanks()
         # now try to parse lexical entities
         if self.__head == OPEN_PARENTHESIS:
-            self.__currentLexeme = self.__extract_string_literal()
+            self.__current_lexeme = self.__extract_string_literal()
     
         elif self.__head == OPEN_ANGLE_BRACKET and self.__peek() != OPEN_ANGLE_BRACKET:
             # If the next bytes had been another OPEN_ANGLE_BRACKET then we would have gotten
             # a "dictionary starts here" mark 
-            self.__currentLexeme = self.__extract_hexadecimal_string()
+            self.__current_lexeme = self.__extract_hexadecimal_string()
 
         elif self.__head == FORWARD_SLASH:
-            self.__currentLexeme = self.__extract_name()
+            self.__advance()
+            item = self.__extract_name_or_operator()
+            self.__current_lexeme = PDFName(item) 
         
         elif is_digit(self.__head):
-            self.__currentLexeme = self.__extract_number(startsWithNumber=True)
+            self.__current_lexeme = self.__extract_number(startsWithNumber=True)
 
         elif self.__head in [PLUS, MINUS, POINT]:
-            self.__currentLexeme = self.__extract_number(startsWithNumber=False)
+            self.__current_lexeme = self.__extract_number(startsWithNumber=False)
 
         elif self.__extract_literal(b"true"):
-            self.__currentLexeme = True
+            self.__current_lexeme = True
         
         elif self.__extract_literal(b"false"):
-            self.__currentLexeme = False
+            self.__current_lexeme = False
         
-        elif self.__extract_literal(b"stream"):
-            self.__currentLexeme = self.__extract_stream_reader()
+        elif not self.__parse_operator and self.__extract_literal(b"stream"):
+            self.__current_lexeme = self.__extract_stream_reader()
 
-        elif self.__extract_keyword():
-            # self.__currentLexeme is set inside the called function
+        elif self.__extract_literal(b"<<"):
+            self.__current_lexeme = PDFDictDelimiter(b"<<")
+        
+        elif self.__extract_literal(b">>"):
+            self.__current_lexeme = PDFDictDelimiter(b">>")
+        
+        elif self.__extract_literal(b"null"):
+            self.__current_lexeme = None
+        
+        elif not self.__parse_operator and self.__extract_keyword():
+            # self.__current_lexeme is set inside the called function
             pass
         
-        elif self.__head in SINGLETONS:
-            self.__currentLexeme = PDFSingleton(self.__head)
+        elif self.__head in self.__SINGLETONS:
+            self.__current_lexeme = PDFSingleton(self.__head)
             self.__advance()
+        
+        # elif ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
+        #     pass
         else:
             # If the input bytes sequence prefix doesn't match anything known, then...
             raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
 
-        return self.__currentLexeme
+        return self.__current_lexeme
 
 
     def undo_next(self, item):
@@ -661,5 +681,5 @@ class Lexer:
         number), and the first number is returned. For more information look at the parser
         module.
         """
-        self.__lexemesBuffer.append(self.__currentLexeme)
-        self.__currentLexeme = item
+        self.__lexemesBuffer.append(self.__current_lexeme)
+        self.__current_lexeme = item

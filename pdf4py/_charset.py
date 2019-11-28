@@ -63,7 +63,7 @@ DELIMITERS = {OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE
 # the order is important here! For example, you don't want "n" to comes before "null", otherwise the
 # latter will never be matched.
 KEYWORDS = [
-   b"<<", b">>", b"endobj", b"obj", b"trailer", b"xref", b"null", b"startxref", b"endstream"
+    b"endobj", b"obj", b"trailer", b"xref", b"startxref", b"endstream"
 ]
 
 

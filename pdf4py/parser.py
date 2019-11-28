@@ -177,55 +177,52 @@ class BasicParser:
                 self.__ended = True
             return L
         
+        elif isinstance(self._lexer.current_lexeme, PDFDictDelimiter) and self._lexer.current_lexeme.value == b"<<":
+            next(self._lexer)
+            D = dict()
+            # now process key - value pairs
+            while True:
+                # get the key
+                keyToken = self._lexer.current_lexeme
+                if isinstance(keyToken, PDFDictDelimiter) and keyToken.value == b">>":
+                    break
+                elif not isinstance(keyToken, PDFName):
+                    self._raise_syntax_error("Expecting dictionary key, '{}' found instead.".format(keyToken))
+                
+                # now get the value
+                next(self._lexer)
+                keyValue = self.parse_object()    
+                D[keyToken.value] = keyValue
+            
+            try:
+                nextLexeme = next(self._lexer)
+            except StopIteration:
+                self.__ended = True
+                return D
+            
+            if not isinstance(self._lexer.current_lexeme, PDFStreamReader):
+                return D
         
-        elif isinstance(self._lexer.current_lexeme, PDFKeyword):
-            keywordVal = self._lexer.current_lexeme.value            
-            if keywordVal == b"<<":
-                next(self._lexer)
-                D = dict()
-                # now process key - value pairs
-                while True:
-                    # get the key
-                    keyToken = self._lexer.current_lexeme
-                    if isinstance(keyToken, PDFKeyword) and keyToken.value == b">>":
-                        break
-                    elif not isinstance(keyToken, PDFName):
-                        self._raise_syntax_error("Expecting dictionary key, '{}' found instead.".format(keyToken))
-                    
-                    # now get the value
-                    next(self._lexer)
-                    keyValue = self.parse_object()    
-                    D[keyToken.value] = keyValue
-                
-                try:
-                    nextLexeme = next(self._lexer)
-                except StopIteration:
-                    self.__ended = True
-                    return D
-                
-                if not isinstance(self._lexer.current_lexeme, PDFStreamReader):
-                    return D
-            
-                if self._stream_reader is None:
-                    raise Exception("Cannot parse a stream with BasicParser without providing a stream_reader callable.")
-            
-                # now we can provide this info to reader
-                bytesReader = self._lexer.current_lexeme.value
-                length, reader = self._stream_reader(D, bytesReader)
+            if self._stream_reader is None:
+                raise Exception("Cannot parse a stream with BasicParser without providing a stream_reader callable.")
+        
+            # now we can provide this info to reader
+            bytesReader = self._lexer.current_lexeme.value
+            length, reader = self._stream_reader(D, bytesReader)
 
-                # and move the header to the endstream position
-                currentLexeme = self._lexer.move_at_position(self._lexer.source.tell() + length)
-                if not isinstance(currentLexeme, PDFKeyword) or currentLexeme.value != b"endstream": 
-                    self._raise_syntax_error("'stream' not matched with an 'endstream' keyword.")
-                next(self._lexer)
-                return PDFStream(D, reader)
+            # and move the header to the endstream position
+            currentLexeme = self._lexer.move_at_position(self._lexer.source.tell() + length)
+            if not isinstance(currentLexeme, PDFKeyword) or currentLexeme.value != b"endstream": 
+                self._raise_syntax_error("'stream' not matched with an 'endstream' keyword.")
+            next(self._lexer)
+            return PDFStream(D, reader)
   
-            elif keywordVal == b"null":
-                try:
-                    next(self._lexer)
-                except StopIteration:
-                    self.__ended = True
-                return None
+        elif self._lexer.current_lexeme is None:
+            try:
+                next(self._lexer)
+            except StopIteration:
+                self.__ended = True
+            return None
 
         elif self._lexer.current_lexeme.__class__ in [PDFHexString, str, bool, float, PDFName]:
             s = self._lexer.current_lexeme

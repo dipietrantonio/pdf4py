@@ -75,6 +75,7 @@ class ParseAllPDFs(unittest.TestCase):
 
 class DocumentTestCase(unittest.TestCase):
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_print_document_catalog(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             myPdfDoc = docpkg.Document(fp)
