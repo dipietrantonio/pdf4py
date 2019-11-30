@@ -27,12 +27,16 @@ from .context import *
 import unittest
 import logging
 
-# logging.basicConfig(level=logging.DEBUG)
 
-
-
-class ParseAnnexHSamplesTest(unittest.TestCase):
-    pass
+def parse_file(filename):
+    with open(filename, "rb") as fp:
+        parser = parpkg.Parser(fp)
+        for pdfXrefEntry in parser.xRefTable:
+            x = parser.parse_xref_entry(pdfXrefEntry)
+            if isinstance(x, parpkg.PDFIndirectObject):
+                x = x.value
+            if isinstance(x, parpkg.PDFStream):
+                x.stream()
 
 
 
@@ -48,28 +52,20 @@ class ParseALatexPDFTest(unittest.TestCase):
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_simple(self):
-        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
-            parser = parpkg.Parser(fp)
-            for pdfXrefEntry in parser.xRefTable:
-                entity = parser.parse_xref_entry(pdfXrefEntry)
+        parse_file(os.path.join(PDFS_FOLDER, "0000.pdf"))
 
+
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_more_complex_file(self):
+        parse_file(os.path.join(PDFS_FOLDER, "0008.pdf"))
 
 
 class ParseAllPDFs(unittest.TestCase):
 
-
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_all_pdfs(self):
-
         for pdfPath in os.listdir(PDFS_FOLDER):
-            with open(os.path.join(PDFS_FOLDER, pdfPath), "rb") as fp:
-                parser = parpkg.Parser(fp)
-                for pdfXrefEntry in parser.xRefTable:
-                    x = parser.parse_xref_entry(pdfXrefEntry)
-                    if isinstance(x, parpkg.PDFIndirectObject):
-                        x = x.value
-                    if isinstance(x, parpkg.PDFStream):
-                        x.stream()
+            parse_file(os.path.join(PDFS_FOLDER, pdfPath))
 
 
 

@@ -137,6 +137,7 @@ class BasicParser:
         try:
             next(self._lexer)
         except StopIteration:
+            logging.debug("File is empty.")
             self.__ended = True
         
 
@@ -313,42 +314,49 @@ class Parser:
         
 
     def _read_header(self):
+        logging.debug("Reading the header..")
         self._basic_parser._lexer.source.seek(0, 0)
         buff = bytearray()
         c = self._basic_parser._lexer.source.read(1)[0]
-        while(c != LINE_FEED):
+        while(c != LINE_FEED and c != CARRIAGE_RETURN):
             buff.append(c)
             c = self._basic_parser._lexer.source.read(1)[0]
-        self.version = buff.decode()[1:]
-
+        try:
+            self.version = buff.decode()[1:]
+        except UnicodeDecodeError:
+            self.version = buff.decode("utf8")
+        logging.debug("_reading_header finished.")
     
+
     def parse_xref_entry(self, xrefEntry):
         # TODO: find proper name to this method
+        logging.debug("parse_xref_entry with input: " + str(xrefEntry))
         if isinstance(xrefEntry, PDFReference):
+            logging.debug("It is a PDFReference")
             xrefEntry = self.xRefTable[xrefEntry]
         
         if isinstance(xrefEntry, XrefInUseEntry):
-            logging.debug("Parsing InUseEntry {} ..".format(repr(xrefEntry)))
+            logging.debug("it is an XrefInUSeEntry")
             self._basic_parser._lexer.move_at_position(xrefEntry.offset)
             parsedObject = self._basic_parser.parse_object()
             self._basic_parser._lexer.move_back()
+            logging.debug("pasing the XrefInUseEntry finished.")
             return parsedObject
         
         elif isinstance(xrefEntry, XrefCompressedEntry):
             # now parse the object stream containing the object the entry refers to
-            logging.debug("Parsing Compressed Entry {} ..".format(repr(xrefEntry)))
-            try:
-                objStmRef = self.xRefTable[(xrefEntry.objstm_number, 0)]
-            except KeyError:
-                self._basic_parser._raise_syntax_error("Couldn't find the object stream in the xref table.")
-            D, streamReader = self.parse_xref_entry(objStmRef).value
+            logging.debug("It is a Xref Compressed Entry.")
+            streamToken = self.parse_xref_entry(PDFReference(xrefEntry.objstm_number, 0))
+            logging.debug("Stream token: " + str(streamToken))
+            D, streamReader = streamToken.value
             stream = streamReader()
-            prevLexer = self._basic_parser._lexer
-            self._basic_parser._lexer = Lexer(stream)
+            logging.debug("Stream got: " + str(stream))
+            prevBasicParser = self._basic_parser
+            self._basic_parser = BasicParser(stream, stream_reader=self._stream_reader)
             obj = None
             for i in range(D["N"]):
-                n1 = next(self._basic_parser._lexer)
-                n2 = next(self._basic_parser._lexer)
+                n1 = self._basic_parser.parse_object()
+                n2 = self._basic_parser.parse_object()
                 if not(isinstance(n1, int) and isinstance(n2, int)):
                     self._basic_parser._raise_syntax_error("Expected integers in object stream.")
                 if n1 == xrefEntry.object_number:
@@ -358,7 +366,8 @@ class Parser:
                     break
             if obj is None:
                 self._basic_parser._raise_syntax_error("Compressed object not found.")
-            self._basic_parser._lexer = prevLexer
+            self._basic_parser = prevBasicParser
+            logging.debug("setting back the parser.")
             return obj
         else:
             raise ValueError("Argument type not supported.")
@@ -429,6 +438,7 @@ class Parser:
         trailer = {k : objStmDict[k] for k in objStmDict if k in self.TRAILER_FIELDS}
         # read the raw stream content
         xrefData = objStm()
+        logging.debug("xref stream: " + str(xrefData))
         # current position inside xrefData
         pos = 0
         # retrieves info about xref stream layout
@@ -477,12 +487,14 @@ class Parser:
                 elif vals[0] == 1:
                     # In use object
                     entry = XrefInUseEntry(vals[1], start + j, vals[2])
+                    logging.debug("XrefInUseEntry: {}".format(entry))
                     inUseObjects[(entry.object_number, entry.generation_number)] = entry
                 else:
                     # it is a compressed object
                     entry = XrefCompressedEntry(start + j, vals[1], vals[2])
+                    logging.debug("XrefCompressedEntry: {}".format(entry))
                     compressedObjects[(entry.object_number, 0)] = entry
-    
+        logging.debug("Ended parsing xref stream.")
         return trailer, (inUseObjects, freeObjects, compressedObjects)
 
 

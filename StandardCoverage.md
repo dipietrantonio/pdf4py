@@ -27,7 +27,7 @@ Nothing to implement here, just introductory stuff.
 | 7.4.2             | ASCIIHexDecode                  | ✗                                      |
 | 7.4.3             | ASCII85Decode                   | ✗                                      |
 | 7.4.4             | LZWDecode                       | ✗                                      |
-| 7.4.4             | FlateDecode                     | ✓                                      |
+| 7.4.4             | FlateDecode                     | ~                                      |
 | 7.4.5             | RunLengthDecode                 | ✗                                      |
 | 7.4.6             | CCITTFaxDecode                  | ✗                                      |
 | 7.4.7             | JBIG2Decode                     | ✗                                      |
