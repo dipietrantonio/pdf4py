@@ -36,8 +36,11 @@ def parse_file(filename):
             if isinstance(x, parpkg.PDFIndirectObject):
                 x = x.value
             if isinstance(x, parpkg.PDFStream):
-                x.stream()
-
+                try:
+                    x.stream()
+                except Exception:
+                    print(x)
+                    raise
 
 
 class ParseALatexPDFTest(unittest.TestCase):
@@ -60,13 +63,17 @@ class ParseALatexPDFTest(unittest.TestCase):
         parse_file(os.path.join(PDFS_FOLDER, "0008.pdf"))
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_more_complex_file(self):
+        parse_file(os.path.join(PDFS_FOLDER, "0009.pdf"))
+
+
 class ParseAllPDFs(unittest.TestCase):
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_all_pdfs(self):
         for pdfPath in os.listdir(PDFS_FOLDER):
             parse_file(os.path.join(PDFS_FOLDER, pdfPath))
-
 
 
 class DocumentTestCase(unittest.TestCase):

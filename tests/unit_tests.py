@@ -136,18 +136,18 @@ class LexerUnitTest(unittest.TestCase):
             "The following is an empty string.",
             "",
             "It has zero (0) length."]
-        self.assertEqual(strings, list(lex))
+        self.assertEqual(strings, [x.value.decode("utf8") for x in list(lex)])
         # Test backslashes
         lex = lexpkg.Lexer(pdfParts[7])
         a, b = next(lex), next(lex)
         self.assertEqual(a, b)
         lex = lexpkg.Lexer(pdfParts[8])
-        self.assertEqual("a backslash is ignored", next(lex))
+        self.assertEqual("a backslash is ignored", next(lex).value.decode("utf8"))
         # Test octal characters
         lex = lexpkg.Lexer(pdfParts[9])
-        self.assertEqual('This string contains ¥two octal charactersÇ.', next(lex))
+        self.assertEqual('This string contains ¥two octal charactersÇ.', next(lex).value.decode("cp1252"))
         lex = lexpkg.Lexer(pdfParts[10])
-        self.assertEqual('\0053', next(lex))
+        self.assertEqual('\0053', next(lex).value.decode("utf8"))
         self.assertEqual(next(lex), next(lex))
         
     
@@ -220,11 +220,12 @@ class BasicParserTestCase(unittest.TestCase):
         par = parpkg.BasicParser(sequence)
         lpar = list(par)
         self.assertEqual(lpar, [346, 123, True, False, 123, 43445, 17, -98, 0,
-            34.5, -3.62, 123.6, 4.0, -0.002, 0.0, " This is a string ", """Strings may contain newlines
- and such.""", """Strings may contain balanced parentheses ( ) and\n special characters ( * ! & } ^ % and so on).""",
-"The following is an empty string.", "", "It has zero (0) length.", "These \ntwo strings \nare the same.", 
-"These \ntwo strings \nare the same.", "a backslash is ignored", "This string contains ¥two octal charactersÇ.","\0053",
-"+", "+", lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E')), None])
+            34.5, -3.62, 123.6, 4.0, -0.002, 0.0, lexpkg.PDFLiteralString(b" This is a string "), lexpkg.PDFLiteralString(b"""Strings may contain newlines
+ and such."""), lexpkg.PDFLiteralString(b"""Strings may contain balanced parentheses ( ) and\n special characters ( * ! & } ^ % and so on)."""),
+lexpkg.PDFLiteralString(b"The following is an empty string."), lexpkg.PDFLiteralString(b""), lexpkg.PDFLiteralString(b"It has zero (0) length."),
+lexpkg.PDFLiteralString(b"These \ntwo strings \nare the same."), lexpkg.PDFLiteralString(b"These \ntwo strings \nare the same."),
+lexpkg.PDFLiteralString(b"a backslash is ignored"), lexpkg.PDFLiteralString(b"This string contains \245two octal characters\307."),lexpkg.PDFLiteralString(b"\0053"),
+lexpkg.PDFLiteralString(b"+"), lexpkg.PDFLiteralString(b"+"), lexpkg.PDFHexString(value=bytearray(b'4E6F762073686D6F7A206B6120706F702E')), None])
 
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
@@ -248,9 +249,9 @@ class BasicParserTestCase(unittest.TestCase):
             "Subtype" : lexpkg.PDFName("DictionaryExample"),
             "Version" : 0.01,
             "IntegerItem" : 12,
-            "StringItem" : "a string",
+            "StringItem" : lexpkg.PDFLiteralString(b"a string"),
             "Subdictionary" : {
-                "Item1" : 0.4, "Item2" : True, "LastItem" :"not!", "VeryLastItem" : "OK"
+                "Item1" : 0.4, "Item2" : True, "LastItem" :lexpkg.PDFLiteralString(b"not!"), "VeryLastItem" : lexpkg.PDFLiteralString(b"OK")
             }
         }
 
@@ -266,7 +267,7 @@ class BasicParserTestCase(unittest.TestCase):
         item1 = next(par)
         item2 = par.parse_object()
         self.assertIsInstance(item1, parpkg.PDFIndirectObject)
-        self.assertEqual(item1.value, " Brillig ")
+        self.assertEqual(item1.value, parpkg.PDFLiteralString(b" Brillig "))
         self.assertIsInstance(item2, parpkg.PDFReference)
 
 
@@ -304,7 +305,7 @@ endobj
         par = parpkg.BasicParser(contentStream, content_stream_mode = True)
         parsed = list(par)
         expected = [parpkg.PDFOperator("BT"), parpkg.PDFName("F1"), 12, parpkg.PDFOperator("Tf"), 72, 
-            712, parpkg.PDFOperator("Td"), "A stream with an indirect length", parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
+            712, parpkg.PDFOperator("Td"), parpkg.PDFLiteralString(b"A stream with an indirect length"), parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
         self.assertEqual(parsed, expected)
 
 class ParserTestCase(unittest.TestCase):

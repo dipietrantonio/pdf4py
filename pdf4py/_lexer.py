@@ -25,7 +25,6 @@ SOFTWARE.
 
 from collections import namedtuple
 import logging
-from binascii import unhexlify
 from ._charset import *
 import _io
 from .exceptions import PDFLexicalError
@@ -42,6 +41,9 @@ PDFSingleton = namedtuple("PDFSingleton", ["value"])
 PDFStreamReader = namedtuple("PDFStreamReader", ["value"])
 PDFOperator = namedtuple("PDFOperator", ["value"])
 PDFDictDelimiter = namedtuple("PDFDictDelimiter", ["value"])
+PDFLiteralString = namedtuple("PDFLiteralString", ["value"])
+
+
 
 class Seekable:
     """
@@ -388,12 +390,8 @@ class Lexer:
             buffer.append(self.__head)
             self.__advance()
         buffer.pop()
-
-        try:
-            return buffer.decode(encoding='utf-8')
-        except UnicodeDecodeError:
-            return buffer.decode(encoding='cp1252')
-    
+        return PDFLiteralString(bytes(buffer))
+        
 
     def __extract_hexadecimal_string(self):
         """

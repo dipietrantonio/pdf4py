@@ -23,7 +23,9 @@ SOFTWARE.
 """
 import zlib
 from math import floor
+from binascii import unhexlify
 from ..exceptions import PDFUnsupportedError
+from .._charset import BLANKS
 
 decoders = {}
 
@@ -103,9 +105,24 @@ def flate_decode(data, params):
     
     if predictor >= 10:
         return png_filter(data, columns, bits_per_component, colors)
-    
+    return data
 
 
+@register("ASCIIHexDecode")
+def asciihexdecode(data, params):
+    # TODO: test it
+    EOD = data.find(ord('>'))
+    if EOD != len(data) - 1:
+        # TODO: better message
+        raise Exception("Badly encoded data.")
+    data = [x for x in data if x not in BLANKS]
+    if len(data) % 2 == 1:
+        data.append(ord('0'))
+    return unhexlify(data)
+
+
+@register("JPXDecode")
+def jpx_decode(data, params):
     return data
 
 

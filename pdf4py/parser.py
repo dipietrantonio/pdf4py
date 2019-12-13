@@ -26,6 +26,7 @@ SOFTWARE.
 import logging
 from collections import namedtuple
 from contextlib import suppress
+from functools import lru_cache
 from ._lexer import *
 from ._decoders import decode
 from .exceptions import PDFSyntaxError, PDFUnsupportedError
@@ -226,7 +227,7 @@ class BasicParser:
                 self.__ended = True
             return None
 
-        elif self._lexer.current_lexeme.__class__ in [PDFHexString, str, bool, float, PDFName]:
+        elif self._lexer.current_lexeme.__class__ in [PDFHexString, PDFLiteralString, bool, float, PDFName]:
             s = self._lexer.current_lexeme
             try:
                 next(self._lexer)
@@ -328,6 +329,7 @@ class Parser:
         logging.debug("_reading_header finished.")
     
 
+    @lru_cache(maxsize=256)
     def parse_xref_entry(self, xrefEntry):
         # TODO: find proper name to this method
         logging.debug("parse_xref_entry with input: " + str(xrefEntry))
