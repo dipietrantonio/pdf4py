@@ -572,7 +572,10 @@ class Parser:
             data = reader(length)
             if isinstance(data, memoryview):
                 data = bytes(data)
-            return decode(D, {}, data)
-        
+            try:
+                return decode(D, {}, data)
+            except Exception as e:
+                self._basic_parser._raise_syntax_error("Error while decoding data: " + str(e))
+            
         return length, completeReader
              
