@@ -23,18 +23,22 @@ SOFTWARE.
 """
 
 
-import os
-import sys
-import logging
+import unittest
+from .context import RC4
 
-BASE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "pdfs")
-sys.path.insert(0, BASE_FOLDER)
-logging.basicConfig(level=logging.INFO)
 
-import pdf4py._lexer as lexpkg
-import pdf4py.parser as parpkg
-import pdf4py.document as docpkg
-import pdf4py._decrypt.RC4 as RC4
+class RC4TestCase(unittest.TestCase):
 
-RUN_ALL_TESTS = os.environ.get("RUN_ALL_TESTS", True)
+
+    def test_rc4_encrypt(self):
+
+        plain = b"Hello world!"
+        expected_ciphertext = b"\x48\x9d\x12\x0b\x4b\x13\x62\xf3\x0d\x5b\x46\x97"
+        key = b"123456"
+        output = RC4.rc4(plain, key)
+        self.assertEqual(output, expected_ciphertext)
+        # convert back
+        self.assertEqual(plain, RC4.rc4(output, key))
+
+if __name__ == "__main__":
+    unittest.main()

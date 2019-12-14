@@ -128,8 +128,8 @@ def jpx_decode(data, params):
 
 @register("DCTDecode")
 def dct_decode(data, params):
-    # TODO: Implement a JSON decompression function
     return data
+
 
 def decode(D : 'dict', sec : 'dict', data):
     filtersChain = D.get('Filter')

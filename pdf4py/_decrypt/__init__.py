@@ -21,20 +21,3 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
-
-import os
-import sys
-import logging
-
-BASE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "pdfs")
-sys.path.insert(0, BASE_FOLDER)
-logging.basicConfig(level=logging.INFO)
-
-import pdf4py._lexer as lexpkg
-import pdf4py.parser as parpkg
-import pdf4py.document as docpkg
-import pdf4py._decrypt.RC4 as RC4
-
-RUN_ALL_TESTS = os.environ.get("RUN_ALL_TESTS", True)

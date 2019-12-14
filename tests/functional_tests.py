@@ -39,7 +39,6 @@ def parse_file(filename):
                 try:
                     x.stream()
                 except Exception:
-                    print(x)
                     raise
 
 
@@ -66,6 +65,23 @@ class ParseALatexPDFTest(unittest.TestCase):
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_more_complex_file(self):
         parse_file(os.path.join(PDFS_FOLDER, "0009.pdf"))
+
+
+
+class ParseEncryptedPDFTestCase(unittest.TestCase):
+    
+    #@unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    ENC_FILE = os.path.join(PDFS_FOLDER, "0009.pdf")
+    def test_read(self):
+        fp = open(self.ENC_FILE, "rb")
+        parser = parpkg.Parser(fp)
+        self.assertIn("Encrypt", parser.trailer)
+        enc_dict = parser.trailer["Encrypt"]
+        if isinstance(enc_dict, parpkg.PDFReference):
+            enc_dict = parser.parse_xref_entry(enc_dict).value
+        self.assertIsInstance(enc_dict, dict)
+        self.assertFalse(True, "Implement me!")
+
 
 
 class ParseAllPDFs(unittest.TestCase):
