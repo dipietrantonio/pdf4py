@@ -24,19 +24,12 @@ SOFTWARE.
 
 
 import logging
-from collections import namedtuple
 from contextlib import suppress
 from functools import lru_cache
 from ._lexer import *
 from ._decoders import decode
 from .exceptions import PDFSyntaxError, PDFUnsupportedError
 
-PDFStream = namedtuple("PDFStream", ["dictionary", "stream"])
-PDFReference = namedtuple("PDFReference", ["object_number", "generation_number"])
-PDFIndirectObject = namedtuple("PDFIndirectObject", ["object_number", "generation_number", "value"])
-XrefInUseEntry = namedtuple("XrefInUseEntry", ["offset", "object_number", "generation_number"])
-XrefCompressedEntry = namedtuple("XrefCompressedEntry", ["object_number", "objstm_number", "index"])
-    
 
 
 class XRefTable:

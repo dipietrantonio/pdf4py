@@ -21,11 +21,9 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
-
-from collections import namedtuple
 import logging
 from ._charset import *
+from .types import *
 import _io
 from .exceptions import PDFLexicalError
 # ------------------------------------------------------------------------------------
@@ -33,15 +31,6 @@ from .exceptions import PDFLexicalError
 # Here are defined all the classes used to represent a valid lexeme in the pdf language
 # that cannot otherwise be represented with standard python types.
 # ------------------------------------------------------------------------------------
-
-PDFName = namedtuple("PDFName", ["value"])
-PDFKeyword = namedtuple("PDFKeyword", ["value"])
-PDFHexString = namedtuple("PDFHexString", ["value"])
-PDFSingleton = namedtuple("PDFSingleton", ["value"])
-PDFStreamReader = namedtuple("PDFStreamReader", ["value"])
-PDFOperator = namedtuple("PDFOperator", ["value"])
-PDFDictDelimiter = namedtuple("PDFDictDelimiter", ["value"])
-PDFLiteralString = namedtuple("PDFLiteralString", ["value"])
 
 
 
