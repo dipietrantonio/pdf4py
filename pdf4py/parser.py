@@ -405,7 +405,7 @@ class Parser:
                 del trailer["Prev"]
             else:
                 xrefPos = -1
-                self.trailer.update(trailer)
+            self.trailer.update(trailer)
 
         # now build a hierarchy of XrefTable instances
         self.xRefTable = None
