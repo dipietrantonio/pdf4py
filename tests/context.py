@@ -37,4 +37,6 @@ import pdf4py.parser as parpkg
 import pdf4py.document as docpkg
 import pdf4py._decrypt.RC4 as RC4
 
-RUN_ALL_TESTS = os.environ.get("RUN_ALL_TESTS", True)
+RUN_ALL_TESTS = True
+if "RUN_ALL_TESTS" in os.environ:
+    RUN_ALL_TESTS = True if os.environ["RUN_ALL_TESTS"] == True else False

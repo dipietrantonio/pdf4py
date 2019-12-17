@@ -81,6 +81,7 @@ class ParseEncryptedPDFTestCase(unittest.TestCase):
             enc_dict = parser.parse_xref_entry(enc_dict).value
         self.assertIsInstance(enc_dict, dict)
         self.assertFalse(True, "Implement me!")
+        fp.close()
 
 
 

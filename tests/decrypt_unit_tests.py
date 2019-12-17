@@ -24,7 +24,8 @@ SOFTWARE.
 
 
 import unittest
-from .context import RC4
+from .context import *
+from pdf4py._decrypt import authenticate_user_password
 
 
 class RC4TestCase(unittest.TestCase):
@@ -40,5 +41,19 @@ class RC4TestCase(unittest.TestCase):
         # convert back
         self.assertEqual(plain, RC4.rc4(output, key))
 
+
+
+class DecryptFunctionsTestCase(unittest.TestCase):
+
+
+    def test_authenticate_user_password(self):
+        fp = open(os.path.join(PDFS_FOLDER, "0009.pdf"), "rb")
+        parser = parpkg.Parser(fp)
+        encryption_dict = parser.parse_xref_entry(parser.trailer["Encrypt"]).value
+        value = authenticate_user_password(b"", encryption_dict, parser.trailer["ID"])
+        self.assertTrue(value is not None)
+        fp.close()
+
+        
 if __name__ == "__main__":
     unittest.main()

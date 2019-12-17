@@ -21,3 +21,84 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
+from itertools import takewhile, chain
+from hashlib import md5
+from binascii import unhexlify
+from ..exceptions import PDFUnsupportedError
+from .RC4 import rc4
+from ..types import PDFHexString, PDFLiteralString
+
+PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
+    b"\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A"
+
+
+
+def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+    """
+    Derives the key to be used with encryption/decryption algorithms from a user-defined password.
+
+    Parameters
+    ----------
+    password : bytes
+        Bytes representation of the password string.
+    
+    encryption_dict : dict
+        The dictionary containing all the information about the encryption procedure.
+    
+    Returns
+    -------
+    A bytes sequence representing the encryption key.
+    """
+    R = encryption_dict["R"]
+    O = encryption_dict["O"]
+    V = encryption_dict.get("V", 0)
+    O = O.value if isinstance(O, PDFLiteralString) else unhexlify(O.value)
+
+    if V == 3:
+        raise PDFUnsupportedError("An unknown algorithm has been used to encrypt the document.")
+
+    Length = encryption_dict.get("Length", 40)
+    if Length % 8 != 0:
+        # TODO: better exception handling
+        raise Exception()
+    Length = Length // 8
+    input_to_md5 = bytearray()
+    
+    if len(password) >= 32:
+        input_to_md5.extend(password[:32])
+    else:
+        input_to_md5.extend(x[1] for x in takewhile(lambda  x: x[0] < 32,
+            enumerate(chain(password, PASSWORD_PADDING))))
+    input_to_md5.extend(O)
+    input_to_md5.extend(encryption_dict["P"].to_bytes(4, byteorder='little', signed = True))
+    input_to_md5.extend(unhexlify(id_array[0].value))
+    if R >= 4 and encryption_dict.get("EncryptMetadata", True):
+        input_to_md5.extend(b"\xFF\xFF\xFF\xFF")
+    computed_hash = md5(input_to_md5).digest()
+    if R >= 3:
+        for i in range(50):
+            computed_hash = md5(computed_hash[:Length]).digest()
+    
+    encryption_key = computed_hash[:Length]
+    return encryption_key
+
+
+
+def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+    R = encryption_dict["R"]
+    U = encryption_dict["U"]
+    U = U.value if isinstance(U, PDFLiteralString) else unhexlify(U.value)
+    encryption_key = compute_encryption_key(password, encryption_dict, id_array)
+    if R == 2:
+        cipher = rc4(PASSWORD_PADDING, encryption_key)
+    else:
+        input_to_md5 = bytearray()
+        input_to_md5.extend(PASSWORD_PADDING)
+        input_to_md5.extend(unhexlify(id_array[0].value))
+        computed_hash = md5(input_to_md5).digest()
+        cipher = rc4(computed_hash, encryption_key)
+        for counter in range(1, 20):
+            cipher = rc4(cipher, bytes(x ^ counter for x in encryption_key))
+  
+    correct_password = (U[:16] == cipher[:16]) if R >= 3 else (U == cipher)
+    return encryption_key if correct_password else None
