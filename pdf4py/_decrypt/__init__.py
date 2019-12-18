@@ -28,9 +28,9 @@ from ..exceptions import PDFUnsupportedError
 from .RC4 import rc4
 from ..types import PDFHexString, PDFLiteralString
 
+
 PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
     b"\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A"
-
 
 
 def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
@@ -63,12 +63,7 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
         raise Exception()
     Length = Length // 8
     input_to_md5 = bytearray()
-    
-    if len(password) >= 32:
-        input_to_md5.extend(password[:32])
-    else:
-        input_to_md5.extend(x[1] for x in takewhile(lambda  x: x[0] < 32,
-            enumerate(chain(password, PASSWORD_PADDING))))
+    input_to_md5.extend((password + PASSWORD_PADDING)[:32])
     input_to_md5.extend(O)
     input_to_md5.extend(encryption_dict["P"].to_bytes(4, byteorder='little', signed = True))
     input_to_md5.extend(unhexlify(id_array[0].value))
@@ -85,6 +80,24 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
 
 
 def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+    """
+    Authenticate the user password.
+
+    Parameters
+    ----------
+    password : bytes
+        The password to be authenticated as user password.
+    
+    encryption_dict : dict
+        The dictionary containing all the information about the encryption procedure.
+
+    id_array : list
+        The two elements array ID, contained in the trailer dictionary.
+    
+    Returns
+    -------
+    The encryption key if the user password is valid, None otherwise.
+    """
     R = encryption_dict["R"]
     U = encryption_dict["U"]
     U = U.value if isinstance(U, PDFLiteralString) else unhexlify(U.value)
@@ -102,3 +115,48 @@ def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_
   
     correct_password = (U[:16] == cipher[:16]) if R >= 3 else (U == cipher)
     return encryption_key if correct_password else None
+
+
+
+def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+    """
+    Authenticate the owner password.
+
+    Parameters
+    ----------
+    password : bytes
+        The password to be authenticated as owner password.
+    
+    encryption_dict : dict
+        The dictionary containing all the information about the encryption procedure.
+
+    id_array : list
+        The two elements array ID, contained in the trailer dictionary.
+    
+    Returns
+    -------
+    The encryption key if the owner password is valid, None otherwise.
+    """
+    Length = encryption_dict.get("Length", 40)
+    if Length % 8 != 0:
+        # TODO: better exception handling
+        raise Exception()
+    Length = Length // 8
+    R = encryption_dict["R"]
+    O = encryption_dict["O"]
+    O = O.value if isinstance(O, PDFLiteralString) else unhexlify(O.value)
+    input_to_md5 = bytearray()
+    input_to_md5.extend((password + PASSWORD_PADDING)[:32])
+    input_to_md5 = md5(input_to_md5).digest()
+    if R >= 3:
+        for i in range(50):
+            input_to_md5 = md5(input_to_md5).digest()
+        
+    encryption_key = input_to_md5[:Length]
+    if R == 2:
+        decrypted = rc4(O, encryption_key)
+    else:
+        decrypted = O
+        for i in range(19, -1, -1):
+            decrypted = rc4(decrypted, bytes(x ^ i for x in encryption_key))
+    return authenticate_user_password(decrypted, encryption_dict, id_array)

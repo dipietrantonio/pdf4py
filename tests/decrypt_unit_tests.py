@@ -25,7 +25,7 @@ SOFTWARE.
 
 import unittest
 from .context import *
-from pdf4py._decrypt import authenticate_user_password
+from pdf4py._decrypt import authenticate_user_password, authenticate_owner_password
 
 
 class RC4TestCase(unittest.TestCase):
@@ -54,6 +54,10 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         self.assertTrue(value is not None)
         fp.close()
 
-        
+    
+    def test_autheticate_owner_password(self):
+        self.assertFalse(True, "Implement me!")
+
+
 if __name__ == "__main__":
     unittest.main()
