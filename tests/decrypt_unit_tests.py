@@ -25,7 +25,7 @@ SOFTWARE.
 
 import unittest
 from .context import *
-from pdf4py._decrypt import authenticate_user_password, authenticate_owner_password
+from pdf4py._decrypt import authenticate_user_password, decrypt
 
 
 class RC4TestCase(unittest.TestCase):
@@ -52,6 +52,9 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         encryption_dict = parser.parse_xref_entry(parser.trailer["Encrypt"]).value
         value = authenticate_user_password(b"", encryption_dict, parser.trailer["ID"])
         self.assertTrue(value is not None)
+        s = parser.parse_xref_entry(parpkg.PDFReference(48, 0)).value["URI"].value
+        dec = decrypt((48, 0), s, value)
+        self.assertEqual(dec, b'http://www.education.gov.yk.ca/')
         fp.close()
 
     

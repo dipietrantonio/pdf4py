@@ -160,3 +160,17 @@ def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id
         for i in range(19, -1, -1):
             decrypted = rc4(decrypted, bytes(x ^ i for x in encryption_key))
     return authenticate_user_password(decrypted, encryption_dict, id_array)
+
+
+
+def decrypt(identifier : 'tuple', data : 'bytes', encryption_key: 'bytes'):
+    n = len(encryption_key)
+    object_number = identifier[0].to_bytes(4, byteorder='little')
+    generation_number = identifier[1].to_bytes(4, byteorder='little')
+    encryption_key_ext = encryption_key + object_number[:3] + generation_number[:2]
+    # TODO: if using aes...
+    hashed_value = md5(encryption_key_ext).digest()
+    encryption_key = hashed_value[:min([n + 5, 16])]
+    
+    # TODO: if using aes..
+    return rc4(data, encryption_key)
