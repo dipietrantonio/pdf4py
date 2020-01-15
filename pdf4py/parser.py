@@ -27,6 +27,7 @@ from contextlib import suppress
 from functools import lru_cache
 from ._lexer import *
 from ._decoders import decode
+from ._decrypt import decrypt, authenticate_user_password
 from .exceptions import PDFSyntaxError, PDFUnsupportedError
 
 
@@ -149,7 +150,7 @@ class BasicParser:
         return self.parse_object()
 
 
-    def parse_object(self):
+    def parse_object(self, obj_num : 'tuple' = None):
         """
         Parse a generic PDF object.
         """
@@ -163,7 +164,7 @@ class BasicParser:
             while True:
                 if isinstance(self._lexer.current_lexeme, PDFSingleton) and self._lexer.current_lexeme.value == CLOSE_SQUARE_BRACKET:
                     break
-                L.append(self.parse_object())
+                L.append(self.parse_object(obj_num))
             # we have successfully parsed a list
             # remove CLOSE_SQUARE_BRAKET token stream from stream
             try:
@@ -186,7 +187,7 @@ class BasicParser:
                 
                 # now get the value
                 next(self._lexer)
-                keyValue = self.parse_object()    
+                keyValue = self.parse_object(obj_num)    
                 D[keyToken.value] = keyValue
             
             try:
@@ -203,7 +204,7 @@ class BasicParser:
         
             # now we can provide this info to reader
             bytesReader = self._lexer.current_lexeme.value
-            length, reader = self._stream_reader(D, bytesReader)
+            length, reader = self._stream_reader(D, bytesReader, obj_num)
 
             # and move the header to the endstream position
             currentLexeme = self._lexer.move_at_position(self._lexer.source.tell() + length)
@@ -255,7 +256,7 @@ class BasicParser:
             
             elif isinstance(lex3, PDFKeyword) and lex3.value == b"obj":
                 next(self._lexer)
-                o = self.parse_object()
+                o = self.parse_object(obj_num)
                 if not isinstance(self._lexer.current_lexeme, PDFKeyword) or self._lexer.current_lexeme.value != b"endobj":
                     self._raise_syntax_error("Expecting matching 'endobj' for 'obj', but not found.")
                 try:
@@ -293,7 +294,7 @@ class Parser:
     TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
 
-    def __init__(self, source):
+    def __init__(self, source, password = b""):
         """
         Initialize the parser by setting the underlying lexical analyzer and load the fist lexeme.
         From now on the following invariant must be kept: before any call the to BaseParser._parse_object
@@ -304,7 +305,18 @@ class Parser:
         self._basic_parser = BasicParser(source, self._stream_reader)
         self._read_header()
         self.__parse_xref_table()
-        
+        self.__encrypt = self.trailer.get("Encrypt")
+        if isinstance(self.__encrypt, PDFReference):
+            self.__encrypt = self.parse_xref_entry(self.__encrypt).value
+        if self.__encrypt is not None:
+            # The document is encrypted, authenticate the password
+            self.__encryption_key = authenticate_user_password(password, self.__encrypt, self.trailer["ID"])
+            if self.__encryption_key is None:
+                raise Exception("Invalid password provided.")
+            # for encryption purposes, it is needed to know the object number
+            # and sequence number of the current object being parsed.
+            self.__current_obj_num = None
+    
 
     def _read_header(self):
         logging.debug("Reading the header..")
@@ -331,8 +343,9 @@ class Parser:
         
         if isinstance(xrefEntry, XrefInUseEntry):
             logging.debug("it is an XrefInUSeEntry")
+            self.__current_obj_num = (xrefEntry.object_number, xrefEntry.generation_number)
             self._basic_parser._lexer.move_at_position(xrefEntry.offset)
-            parsedObject = self._basic_parser.parse_object()
+            parsedObject = self._basic_parser.parse_object(self.__current_obj_num)
             self._basic_parser._lexer.move_back()
             logging.debug("pasing the XrefInUseEntry finished.")
             return parsedObject
@@ -356,7 +369,7 @@ class Parser:
                 if n1 == xrefEntry.object_number:
                     offset = D["First"] + n2
                     self._basic_parser._lexer.move_at_position(offset)
-                    obj = self._basic_parser.parse_object()
+                    obj = self._basic_parser.parse_object(self.__current_obj_num)
                     break
             if obj is None:
                 self._basic_parser._raise_syntax_error("Compressed object not found.")
@@ -533,7 +546,7 @@ class Parser:
         return trailer, (inUseObjects, freeObjects)
     
 
-    def _stream_reader(self, D : 'dict', reader):
+    def _stream_reader(self, D : 'dict', reader, obj_num : 'tuple' = None):
         filePath = D.get("F")
         if filePath is not None:
             raise PDFUnsupportedError("""
@@ -559,11 +572,16 @@ class Parser:
 
         if not isinstance(length, int):
             self._basic_parser._raise_syntax_error("The object referenced by 'Length' is not an integer.")
-        
+
         def completeReader():
             data = reader(length)
             if isinstance(data, memoryview):
                 data = bytes(data)
+            if getattr(self, "_Parser__encrypt", None) is not None and obj_num is not None and D.get("Type") != PDFName("XRef"):
+                try:
+                    data = decrypt(data, obj_num, self.__encryption_key, self.__encrypt)
+                except Exception as e:
+                    self._basic_parser._raise_syntax_error("Error while decrypting data: " + str(e))
             try:
                 return decode(D, {}, data)
             except Exception as e:

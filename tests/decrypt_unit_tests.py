@@ -52,7 +52,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         value = authenticate_user_password(b"", encryption_dict, parser.trailer["ID"])
         self.assertTrue(value is not None)
         s = parser.parse_xref_entry(parpkg.PDFReference(48, 0)).value["URI"].value
-        dec = decrypt((48, 0), s, value)
+        dec = decrypt(s, (48, 0), value, {})
         self.assertEqual(dec, b'http://www.education.gov.yk.ca/')
         fp.close()
 

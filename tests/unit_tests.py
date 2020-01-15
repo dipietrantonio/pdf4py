@@ -281,7 +281,7 @@ this is the content of the stream.
 endstream
 endobj
 """
-        par = parpkg.BasicParser(sourceStream, lambda D, read : (D["Length"], lambda : read(D["Length"])))
+        par = parpkg.BasicParser(sourceStream, lambda D, read, x = None : (D["Length"], lambda : read(D["Length"])))
         item = next(par)
         val = bytes(item.value.stream())
         self.assertEqual(val, b"this is the content of the stream.")
