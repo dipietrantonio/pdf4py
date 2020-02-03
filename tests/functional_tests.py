@@ -79,7 +79,9 @@ class ParseEncryptedPDFTestCase(unittest.TestCase):
         if isinstance(enc_dict, parpkg.PDFReference):
             enc_dict = parser.parse_xref_entry(enc_dict).value
         self.assertIsInstance(enc_dict, dict)
-        self.assertFalse(True, "Implement me!")
+        doc_info = parser.parse_xref_entry(parser.xRefTable[(6, 0)]).value
+        self.assertIsInstance(doc_info, dict)
+        self.assertIn(b'Acrobat', doc_info["Creator"].value)
         fp.close()
 
 
