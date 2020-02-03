@@ -163,7 +163,7 @@ def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id
 
 
 
-def decrypt(data : 'bytes', identifier : 'tuple', encryption_key: 'bytes', encryption_dict : 'dict'):
+def decrypt(encryption_key: 'bytes', encryption_dict : 'dict', data : 'bytes', identifier : 'tuple'):
     n = len(encryption_key)
     object_number = identifier[0].to_bytes(4, byteorder='little')
     generation_number = identifier[1].to_bytes(4, byteorder='little')

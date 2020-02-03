@@ -24,7 +24,7 @@ SOFTWARE.
 
 import logging
 from contextlib import suppress
-from functools import lru_cache
+from functools import lru_cache, partial
 from ._lexer import *
 from ._decoders import decode
 from ._decrypt import decrypt, authenticate_user_password
@@ -219,13 +219,17 @@ class BasicParser:
             except StopIteration:
                 self.__ended = True
             return None
-
-        elif self._lexer.current_lexeme.__class__ in [PDFHexString, PDFLiteralString, bool, float, PDFName]:
+    
+        elif isinstance(self._lexer.current_lexeme, (PDFHexString, PDFLiteralString, bool, float, PDFName)):
             s = self._lexer.current_lexeme
             try:
                 next(self._lexer)
             except StopIteration:
                 self.__ended = True
+
+            if isinstance(s, (PDFHexString, PDFLiteralString)) and obj_num is not None and hasattr(self, "_decrypt"):
+                s = s.__class__(self._decrypt(s.value, obj_num))
+                
             return s
 
         elif isinstance(self._lexer.current_lexeme, int):
@@ -316,6 +320,7 @@ class Parser:
             # for encryption purposes, it is needed to know the object number
             # and sequence number of the current object being parsed.
             self.__current_obj_num = None
+            self._basic_parser._decrypt = partial(decrypt, self.__encryption_key, self.__encrypt)
     
 
     def _read_header(self):
@@ -579,7 +584,7 @@ class Parser:
                 data = bytes(data)
             if getattr(self, "_Parser__encrypt", None) is not None and obj_num is not None and D.get("Type") != PDFName("XRef"):
                 try:
-                    data = decrypt(data, obj_num, self.__encryption_key, self.__encrypt)
+                    data = decrypt(self.__encryption_key, self.__encrypt, data, obj_num)
                 except Exception as e:
                     self._basic_parser._raise_syntax_error("Error while decrypting data: " + str(e))
             try:
