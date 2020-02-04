@@ -37,6 +37,7 @@ import pdf4py.parser as parpkg
 import pdf4py.document as docpkg
 import pdf4py._decrypt.RC4 as RC4
 from pdf4py._decrypt.aes import *
+from pdf4py._decoders import tiff_predictor
 
 RUN_ALL_TESTS = True
 if "RUN_ALL_TESTS" in os.environ:

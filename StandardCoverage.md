@@ -12,7 +12,7 @@ Nothing to implement here, just introductory stuff.
 
 | Section           | Description                     | Status                                 |
 | ----------------- | ------------------------------- | -------------------------------------- |
-| 7.2               | Lexical conventions             | ✓                                      |           
+| 7.2               | Lexical conventions             | ✓                                      |      
 | 7.3               | Objects                         | ~                                      |
 | 7.3.2             | Boolean objects                 | ✓                                      |
 | 7.3.3             | Numeric objects                 | ✓                                      |
@@ -24,15 +24,15 @@ Nothing to implement here, just introductory stuff.
 | 7.3.9             | Null object                     | ✓                                      |
 | 7.3.10            | Indirect objects                | ✓                                      |
 | 7.4               | Filters                         | Minimal support                        |
-| 7.4.2             | ASCIIHexDecode                  | ✗                                      |
+| 7.4.2             | ASCIIHexDecode                  | ~ (Testing is missing still)           |   
 | 7.4.3             | ASCII85Decode                   | ✗                                      |
 | 7.4.4             | LZWDecode                       | ✗                                      |
-| 7.4.4             | FlateDecode                     | ~                                      |
+| 7.4.4             | FlateDecode                     | ✓                                      |
 | 7.4.5             | RunLengthDecode                 | ✗                                      |
-| 7.4.6             | CCITTFaxDecode                  | ✗                                      |
-| 7.4.7             | JBIG2Decode                     | ✗                                      |
-| 7.4.8             | DCTDecode                       | ✗                                      |
-| 7.4.9             | JPXDecode                       | ✗                                      |
+| 7.4.6             | CCITTFaxDecode                  | / (data returned 'as is')              |
+| 7.4.7             | JBIG2Decode                     | / (data returned 'as is')              |
+| 7.4.8             | DCTDecode                       | / (data returned 'as is')              |
+| 7.4.9             | JPXDecode                       | / (data returned 'as is')              |
 | 7.4.10            | Crypt                           | ✗                                      |
 | 7.5               | File Structure                  | Work in progress                       |
 | 7.5.2             | File header                     | ✓                                      |
@@ -41,7 +41,7 @@ Nothing to implement here, just introductory stuff.
 | 7.5.6             | Incremental updates             | ✓                                      |
 | 7.5.7             | Object streams                  | ~                                      |
 | 7.5.8             | Cross Reference Streams         | ✓                                      |
-| 7.6               | Encription                      | ✗                                      |
+| 7.6               | Encription                      | Work in progress                       |
 
 
 ## Chapter 8 - Graphics

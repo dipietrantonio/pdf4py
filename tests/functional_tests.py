@@ -69,9 +69,9 @@ class ParseALatexPDFTest(unittest.TestCase):
 
 class ParseEncryptedPDFTestCase(unittest.TestCase):
     
-    #@unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
-    ENC_FILE = os.path.join(PDFS_FOLDER, "0009.pdf")
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_read(self):
+        ENC_FILE = os.path.join(PDFS_FOLDER, "0009.pdf")
         fp = open(self.ENC_FILE, "rb")
         parser = parpkg.Parser(fp)
         self.assertIn("Encrypt", parser.trailer)

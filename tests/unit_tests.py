@@ -349,3 +349,17 @@ if __name__ == "__main__":
     unittest.main()
 
 
+
+class DecodersUnitTest(unittest.TestCase):
+
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_tiff_predictor(self):
+        image_filtered = bytes([
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ])
+        image_unfiltered = bytes([
+            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+        ])
+        self.assertEqual(image_unfiltered, tiff_predictor(image_filtered, 3, 8, 4))

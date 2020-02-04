@@ -37,6 +37,20 @@ def register(filterName):
 
 
 
+def tiff_predictor(data, width, bits_per_component, colors):
+    if bits_per_component < 8:
+        raise PDFUnsupportedError("The value '{}' for 'BitsPerComponent' parameter of 'FlateDecode' is not supported.".format(bits_per_component))
+    output = bytearray(len(data))
+    bpp = int(bits_per_component / 8 * colors)
+    width *= bpp
+    for i in range(0, len(data), width):
+        output[i:i + bpp] = data[i:i + bpp]
+        for j in range(bpp, width):
+            output[i + j] = output[i + j - bpp] + data[i + j] 
+    return output
+
+
+
 def paeth_predictor(a, b, c):
     p = a + b - c
     pa = abs(p - a)
@@ -103,7 +117,9 @@ def flate_decode(data, params):
     colors = params.get('Colors', 1)
     bits_per_component = params.get('BitsPerComponent', 8)
     
-    if predictor >= 10:
+    if predictor == 2:
+        return tiff_predictor(data, columns, bits_per_component, colors)
+    elif predictor >= 10:
         return png_filter(data, columns, bits_per_component, colors)
     return data
 
