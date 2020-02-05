@@ -229,7 +229,7 @@ class BasicParser:
                 self.__ended = True
 
             if isinstance(s, (PDFHexString, PDFLiteralString)) and obj_num is not None and self._security_handler is not None:
-                s = s.__class__(self._security_handler.decrypt(s.value, obj_num))
+                s = s.__class__(self._security_handler.decrypt_string(s.value, obj_num))
                 
             return s
 
@@ -575,19 +575,20 @@ class Parser:
         if not isinstance(length, int):
             self._basic_parser._raise_syntax_error("The object referenced by 'Length' is not an integer.")
 
-        def completeReader():
+        def complete_reader():
             data = reader(length)
+            # TODO: improve this
             if isinstance(data, memoryview):
                 data = bytes(data)
-            if D.get("Type") != PDFName("XRef") and self._security_handler is not None and obj_num is not None:
+            if D.get('Type') != PDFName('XRef') and self._security_handler is not None:
                 try:
-                    data = self._security_handler.decrypt(data, obj_num)
+                    data = self._security_handler.decrypt_stream(data, D, obj_num)
                 except Exception as e:
                     self._basic_parser._raise_syntax_error("Error while decrypting data: " + str(e))
             try:
-                return decode(D, {}, data)
+                return decode(D, data)
             except Exception as e:
                 self._basic_parser._raise_syntax_error("Error while decoding data: " + str(e))
             
-        return length, completeReader
+        return length, complete_reader
              

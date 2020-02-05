@@ -209,9 +209,7 @@ def cbc_encrypt(data : 'bytes', key : 'bytes', iv : 'bytes'):
     # pad the plaintext if necessary
     data_len = len(data)
     rem = data_len % (4*Nb)
-    if rem != 0:
-        data += bytes([0] * (4*Nb - rem))
-    
+    data += bytes([4*Nb - rem] * (4*Nb - rem))
     # key expansion
     Nk = len(key) / 4
     assert(Nk in [4.0, 6.0, 8.0])
@@ -249,4 +247,5 @@ def cbc_decrypt(data : 'bytes', key : 'bytes', iv : 'bytes'):
         decr_block = xor(inv_cipher(encr_block, expanded_key, Nr),  input_xor)
         decrypted.extend(decr_block)
         input_xor = encr_block
-    return bytes(decrypted)
+    pad = decrypted
+    return bytes(decrypted[:-pad])

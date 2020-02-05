@@ -38,6 +38,7 @@ def register(filterName):
 
 
 def tiff_predictor(data, width, bits_per_component, colors):
+    # TODO: must be tested
     if bits_per_component < 8:
         raise PDFUnsupportedError("The value '{}' for 'BitsPerComponent' parameter of 'FlateDecode' is not supported.".format(bits_per_component))
     output = bytearray(len(data))
@@ -46,7 +47,7 @@ def tiff_predictor(data, width, bits_per_component, colors):
     for i in range(0, len(data), width):
         output[i:i + bpp] = data[i:i + bpp]
         for j in range(bpp, width):
-            output[i + j] = output[i + j - bpp] + data[i + j] 
+            output[i + j] = (output[i + j - bpp]  + data[i + j]) & 255
     return output
 
 
@@ -148,7 +149,7 @@ def dct_decode(data, params):
     return data
 
 
-def decode(D : 'dict', sec : 'dict', data):
+def decode(D : 'dict', data):
     filtersChain = D.get('Filter')
     if filtersChain is not None:
         if isinstance(filtersChain, list):
@@ -160,6 +161,6 @@ def decode(D : 'dict', sec : 'dict', data):
             decoder = decoders.get(filterSpecifier)
             if decoder is None:
                 raise PDFUnsupportedError("Filter '{}' is not supported.".format(filterSpecifier))
-            data = decoder(data, filterParams)    
+            data = decoder(data, filterParams)
     return data
 

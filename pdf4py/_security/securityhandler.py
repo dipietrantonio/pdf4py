@@ -20,9 +20,10 @@ SOFTWARE.
 from itertools import takewhile, chain
 from hashlib import md5
 from binascii import unhexlify
-from ..exceptions import PDFUnsupportedError, PDFWrongPasswordError
+from ..exceptions import *
 from .rc4 import rc4
-from ..types import PDFHexString, PDFLiteralString
+from .aes import cbc_decrypt
+from ..types import PDFHexString, PDFLiteralString, PDFName
 
 
 PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
@@ -154,17 +155,20 @@ def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id
 
 
 
-def decrypt(encryption_key: 'bytes', encryption_dict : 'dict', data : 'bytes', identifier : 'tuple'):
+def decrypt(encryption_key: 'bytes', encryption_dict : 'dict', data : 'bytes', identifier : 'tuple', algo = 'rc4'):
     n = len(encryption_key)
     object_number = identifier[0].to_bytes(4, byteorder='little')
     generation_number = identifier[1].to_bytes(4, byteorder='little')
     encryption_key_ext = encryption_key + object_number[:3] + generation_number[:2]
-    # TODO: if using aes...
+    if algo == 'AES':
+        encryption_key_ext += b'\x73\x41\x6C\x54'
     hashed_value = md5(encryption_key_ext).digest()
     encryption_key = hashed_value[:min([n + 5, 16])]
-    
-    # TODO: if using aes..
-    return rc4(data, encryption_key)
+    if algo == 'AES':
+        IV, data = data[:16], data[16:]
+        return cbc_decrypt(data, encryption_key, IV)
+    else:
+        return rc4(data, encryption_key)
 
 
 
@@ -179,5 +183,43 @@ class StandardSecurityHandler:
             raise PDFWrongPasswordError()
     
 
-    def decrypt(self, data, identifier):
+    def decrypt_string(self, data, identifier):
         return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
+
+    
+    def decrypt_stream(self, data, D, identifier):
+        V = self.__encryption_dict['V']
+        if V == 4:
+            filters = D.get('Filters')
+            if isinstance(filters, list):
+                filters = filters[-1]
+            if filters is None or filters != 'Crypt':
+                crypt_filter_name = self.__encryption_dict.get('StmF')
+                if crypt_filter_name is None:
+                    raise PDFSyntaxError("No 'StmF' entry found in 'Encrypt' dictionary (but V = 4).")
+            else:
+                params = D.get('DecodeParams', {})
+                crypt_filter_name = params.get('Name', PDFName('Identity'))
+            crypt_filter_name = crypt_filter_name.value
+            if crypt_filter_name == 'Identity':
+                return data
+            else:
+                CF = self.__encryption_dict.get('CF')
+                if CF is None:
+                    raise PDFSyntaxError("No 'CF' entry in 'Encrypt' dictionary (but V = 4)")
+                crypt_filter = CF[crypt_filter_name.value]
+
+                CFM = crypt_filter.get('CFM', PDFName('None')).value
+                if CFM == 'None':
+                    raise PDFUnsupportedError("Crypt filter with CFM = None is not supported.")
+                elif CFM == 'V2':
+                    return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
+                elif CFM == 'AESV2':
+                    return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
+                else:
+                    raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
+
+        else:
+            return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
+
+        
