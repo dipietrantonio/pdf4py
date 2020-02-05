@@ -27,7 +27,7 @@ from contextlib import suppress
 from functools import lru_cache, partial
 from ._lexer import *
 from ._decoders import decode
-from ._decrypt import decrypt, authenticate_user_password
+from ._security.securityhandler import StandardSecurityHandler
 from .exceptions import PDFSyntaxError, PDFUnsupportedError
 
 
@@ -126,6 +126,7 @@ class BasicParser:
         # read the header
         self._lexer = Lexer(source)
         self._stream_reader = stream_reader
+        self._security_handler = None
         self.__ended = False
         self.__content_stream_mode = content_stream_mode
         try:
@@ -227,8 +228,8 @@ class BasicParser:
             except StopIteration:
                 self.__ended = True
 
-            if isinstance(s, (PDFHexString, PDFLiteralString)) and obj_num is not None and hasattr(self, "_decrypt"):
-                s = s.__class__(self._decrypt(s.value, obj_num))
+            if isinstance(s, (PDFHexString, PDFLiteralString)) and obj_num is not None and self._security_handler is not None:
+                s = s.__class__(self._security_handler.decrypt(s.value, obj_num))
                 
             return s
 
@@ -309,19 +310,15 @@ class Parser:
         self._basic_parser = BasicParser(source, self._stream_reader)
         self._read_header()
         self.__parse_xref_table()
-        self.__encrypt = self.trailer.get("Encrypt")
-        if isinstance(self.__encrypt, PDFReference):
-            self.__encrypt = self.parse_xref_entry(self.__encrypt).value
-        if self.__encrypt is not None:
-            # The document is encrypted, authenticate the password
-            self.__encryption_key = authenticate_user_password(password, self.__encrypt, self.trailer["ID"])
-            if self.__encryption_key is None:
-                raise Exception("Invalid password provided.")
-            # for encryption purposes, it is needed to know the object number
-            # and sequence number of the current object being parsed.
-            self.__current_obj_num = None
-            self._basic_parser._decrypt = partial(decrypt, self.__encryption_key, self.__encrypt)
-    
+        encryption_dict = self.trailer.get("Encrypt")
+        if encryption_dict is not None:
+            if isinstance(encryption_dict, PDFReference):
+                encryption_dict = self.parse_xref_entry(encryption_dict).value
+            self._security_handler = StandardSecurityHandler(password, encryption_dict, self.trailer["ID"])
+        else:
+            self._security_handler = None
+        self._basic_parser._security_handler = self._security_handler
+
 
     def _read_header(self):
         logging.debug("Reading the header..")
@@ -582,9 +579,9 @@ class Parser:
             data = reader(length)
             if isinstance(data, memoryview):
                 data = bytes(data)
-            if getattr(self, "_Parser__encrypt", None) is not None and obj_num is not None and D.get("Type") != PDFName("XRef"):
+            if D.get("Type") != PDFName("XRef") and self._security_handler is not None and obj_num is not None:
                 try:
-                    data = decrypt(self.__encryption_key, self.__encrypt, data, obj_num)
+                    data = self._security_handler.decrypt(data, obj_num)
                 except Exception as e:
                     self._basic_parser._raise_syntax_error("Error while decrypting data: " + str(e))
             try:

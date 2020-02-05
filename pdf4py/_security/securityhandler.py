@@ -1,18 +1,14 @@
 """
 MIT License
-
 Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio@gmail.com)
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
-
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -24,8 +20,8 @@ SOFTWARE.
 from itertools import takewhile, chain
 from hashlib import md5
 from binascii import unhexlify
-from ..exceptions import PDFUnsupportedError
-from .RC4 import rc4
+from ..exceptions import PDFUnsupportedError, PDFWrongPasswordError
+from .rc4 import rc4
 from ..types import PDFHexString, PDFLiteralString
 
 
@@ -36,7 +32,6 @@ PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x0
 def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
     """
     Derives the key to be used with encryption/decryption algorithms from a user-defined password.
-
     Parameters
     ----------
     password : bytes
@@ -82,7 +77,6 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
 def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
     """
     Authenticate the user password.
-
     Parameters
     ----------
     password : bytes
@@ -90,7 +84,6 @@ def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_
     
     encryption_dict : dict
         The dictionary containing all the information about the encryption procedure.
-
     id_array : list
         The two elements array ID, contained in the trailer dictionary.
     
@@ -121,7 +114,6 @@ def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_
 def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
     """
     Authenticate the owner password.
-
     Parameters
     ----------
     password : bytes
@@ -129,7 +121,6 @@ def authenticate_owner_password(password : 'bytes', encryption_dict : 'dict', id
     
     encryption_dict : dict
         The dictionary containing all the information about the encryption procedure.
-
     id_array : list
         The two elements array ID, contained in the trailer dictionary.
     
@@ -174,3 +165,19 @@ def decrypt(encryption_key: 'bytes', encryption_dict : 'dict', data : 'bytes', i
     
     # TODO: if using aes..
     return rc4(data, encryption_key)
+
+
+
+class StandardSecurityHandler:
+
+
+    def __init__(self, password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+        self.__encryption_dict = encryption_dict
+        self.__id_array = id_array
+        self.__encryption_key = authenticate_user_password(password, encryption_dict, id_array)
+        if self.__encryption_key is None:
+            raise PDFWrongPasswordError()
+    
+
+    def decrypt(self, data, identifier):
+        return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)

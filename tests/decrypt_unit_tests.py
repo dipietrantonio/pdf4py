@@ -24,7 +24,7 @@ SOFTWARE.
 
 import unittest
 from .context import *
-from pdf4py._decrypt import authenticate_user_password, decrypt
+from pdf4py._security.securityhandler import authenticate_user_password, decrypt
 
 
 class RC4TestCase(unittest.TestCase):
@@ -35,10 +35,10 @@ class RC4TestCase(unittest.TestCase):
         plain = b"Hello world!"
         expected_ciphertext = b"\x48\x9d\x12\x0b\x4b\x13\x62\xf3\x0d\x5b\x46\x97"
         key = b"123456"
-        output = RC4.rc4(plain, key)
+        output = rc4pkg.rc4(plain, key)
         self.assertEqual(output, expected_ciphertext)
         # convert back
-        self.assertEqual(plain, RC4.rc4(output, key))
+        self.assertEqual(plain, rc4pkg.rc4(output, key))
 
 
 
