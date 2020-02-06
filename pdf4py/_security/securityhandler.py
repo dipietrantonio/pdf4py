@@ -49,7 +49,6 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
     O = encryption_dict["O"]
     V = encryption_dict.get("V", 0)
     O = O.value if isinstance(O, PDFLiteralString) else unhexlify(O.value)
-
     if V == 3:
         raise PDFUnsupportedError("An unknown algorithm has been used to encrypt the document.")
 
@@ -62,8 +61,8 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
     input_to_md5.extend((password + PASSWORD_PADDING)[:32])
     input_to_md5.extend(O)
     input_to_md5.extend(encryption_dict["P"].to_bytes(4, byteorder='little', signed = True))
-    input_to_md5.extend(unhexlify(id_array[0].value))
-    if R >= 4 and encryption_dict.get("EncryptMetadata", True):
+    input_to_md5.extend(id_array[0])
+    if R >= 4 and not encryption_dict.get("EncryptMetadata", True):
         input_to_md5.extend(b"\xFF\xFF\xFF\xFF")
     computed_hash = md5(input_to_md5).digest()
     if R >= 3:
@@ -101,12 +100,12 @@ def authenticate_user_password(password : 'bytes', encryption_dict : 'dict', id_
     else:
         input_to_md5 = bytearray()
         input_to_md5.extend(PASSWORD_PADDING)
-        input_to_md5.extend(unhexlify(id_array[0].value))
+        input_to_md5.extend(id_array[0])
         computed_hash = md5(input_to_md5).digest()
         cipher = rc4(computed_hash, encryption_key)
         for counter in range(1, 20):
             cipher = rc4(cipher, bytes(x ^ counter for x in encryption_key))
-  
+
     correct_password = (U[:16] == cipher[:16]) if R >= 3 else (U == cipher)
     return encryption_key if correct_password else None
 
@@ -177,10 +176,12 @@ class StandardSecurityHandler:
 
     def __init__(self, password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
         self.__encryption_dict = encryption_dict
-        self.__id_array = id_array
-        self.__encryption_key = authenticate_user_password(password, encryption_dict, id_array)
+        self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
+        self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
         if self.__encryption_key is None:
-            raise PDFWrongPasswordError()
+            self.__encryption_key = authenticate_owner_password(password, encryption_dict, self.__id_array)    
+            if self.__encryption_key is None:
+                raise PDFWrongPasswordError()
     
 
     def decrypt_string(self, data, identifier):
