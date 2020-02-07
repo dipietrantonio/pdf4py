@@ -18,16 +18,80 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 from itertools import takewhile, chain
-from hashlib import md5
+from hashlib import md5, sha256
 from binascii import unhexlify
 from ..exceptions import *
 from .rc4 import rc4
 from .aes import cbc_decrypt
 from ..types import PDFHexString, PDFLiteralString, PDFName
+import stringprep
+import unicodedata
 
 
 PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
     b"\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A"
+
+
+def sals_stringprep(string):
+    """
+
+    TODO: implements bidirectional checks https://tools.ietf.org/html/rfc3454#section-6
+    """
+    new_string = []
+    for x in string:
+        if stringprep.in_table_c12(x):
+            new_string.append(' ')
+        elif stringprep.in_table_b1(x):
+            continue
+        elif stringprep.in_table_c12(x) or stringprep.in_table_c21_c22(x) or stringprep.in_table_c3(x)\
+                or stringprep.in_table_c4(x) or stringprep.in_table_c5(x) or stringprep.in_table_c6(x)\
+                or stringprep.in_table_c7(x) or stringprep.in_table_c8(x) or stringprep.in_table_c9(x):
+            raise PDFGenericError("Invalid input character in password.")
+        else:
+            new_string.append(x)
+    return unicodedata.normalize('NFKC', "".join(c for c in new_string))
+
+
+
+def compute_encryption_key_AESV3(password : 'str', encryption_dict : 'dict', id_array : 'list'):
+    """
+    Derives the key to be used with encryption/decryption algorithms from a user-defined password.
+    Parameters
+    ----------
+    password : bytes
+        Bytes representation of the password string.
+    
+    encryption_dict : dict
+        The dictionary containing all the information about the encryption procedure.
+    
+    Returns
+    -------
+    A bytes sequence representing the encryption key.
+    """
+    U = encryption_dict["U"]
+    U = U.value if isinstance(U, PDFLiteralString) else unhexlify(U.value)
+    O = encryption_dict["O"]
+    O = O.value if isinstance(O, PDFLiteralString) else unhexlify(O.value)
+
+    prepped = sals_stringprep(password)
+    truncated = prepped.encode("utf8")[:127]
+    digest = sha256(truncated + O[32:32+8] + U).digest()
+    if digest == O[:32]:
+        intermediate = sha256(truncated + O[-8:] + U).digest()
+        OE = encryption_dict["OE"]
+        OE = OE.value if isinstance(OE, PDFLiteralString) else unhexlify(OE.value)
+        file_encryption_key = cbc_decrypt(OE, intermediate, [0]*16, padding = False)
+    else:
+        digest = sha256(truncated + U[32:32+8]).digest()
+        if digest == U[:32]:
+            intermediate = sha256(truncated + U[-8:]).digest()
+            UE = encryption_dict["UE"]
+            UE = UE.value if isinstance(UE, PDFLiteralString) else unhexlify(UE.value)
+            file_encryption_key = cbc_decrypt(UE, intermediate, [0]*16, padding=False)
+        else:
+            raise PDFWrongPasswordError()
+    return file_encryption_key
+
 
 
 def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
@@ -54,8 +118,7 @@ def compute_encryption_key(password : 'bytes', encryption_dict : 'dict', id_arra
 
     Length = encryption_dict.get("Length", 40)
     if Length % 8 != 0:
-        # TODO: better exception handling
-        raise Exception()
+        raise PDFGenericError("Invalid key length.")
     Length = Length // 8
     input_to_md5 = bytearray()
     input_to_md5.extend((password + PASSWORD_PADDING)[:32])
@@ -178,15 +241,21 @@ class StandardSecurityHandler:
         self.__encryption_dict = encryption_dict
         self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
         self.__V = self.__encryption_dict['V']
-        self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
-        if self.__encryption_key is None:
-            self.__encryption_key = authenticate_owner_password(password, encryption_dict, self.__id_array)    
+        if self.__V not in list(range(6)):
+            raise PDFGenericError("The 'V' entry in the Encrypt dictionary is given an illegal value: '{}'".format(self.__V))
+        if self.__V == 5:
+            self.__encryption_key = compute_encryption_key_AESV3(password, encryption_dict, self.__id_array)
+        else:
+            self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
             if self.__encryption_key is None:
-                raise PDFWrongPasswordError()
-    
+                self.__encryption_key = authenticate_owner_password(password, encryption_dict, self.__id_array)    
+                if self.__encryption_key is None:
+                    raise PDFWrongPasswordError()
+
+
 
     def decrypt_string(self, data, identifier):
-        if self.__V == 4:
+        if self.__V >= 4:
             crypt_filter_name = self.__encryption_dict.get('StrF')
             if crypt_filter_name is None:
                 raise PDFSyntaxError("No 'StrF' entry found in 'Encrypt' dictionary (but V = 4).")
@@ -206,6 +275,10 @@ class StandardSecurityHandler:
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
                 elif CFM == 'AESV2':
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
+                elif CFM == 'AESV3':
+                    dec =  cbc_decrypt(data[16:], self.__encryption_key, data[:16])
+                    print(dec)
+                    return dec
                 else:
                     raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
         else:

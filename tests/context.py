@@ -39,6 +39,7 @@ import pdf4py.document as docpkg
 import pdf4py._security.rc4 as rc4pkg
 from pdf4py._security.aes import *
 from pdf4py._decoders import tiff_predictor
+from pdf4py.exceptions import *
 
 RUN_ALL_TESTS = True
 if "RUN_ALL_TESTS" in os.environ:

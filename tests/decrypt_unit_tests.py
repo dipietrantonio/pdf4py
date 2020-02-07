@@ -24,7 +24,7 @@ SOFTWARE.
 
 import unittest
 from .context import *
-from pdf4py._security.securityhandler import authenticate_user_password, decrypt
+from pdf4py._security.securityhandler import authenticate_user_password, decrypt, sals_stringprep
 from binascii import unhexlify
 
 class RC4TestCase(unittest.TestCase):
@@ -55,20 +55,49 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         self.assertEqual(s, b'http://www.education.gov.yk.ca/')
         fp.close()
 
-    #@unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_128(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0017.pdf"), "rb")
         parser = parpkg.Parser(fp, b'foo')
         for x in parser.xRefTable:
-            print(parser.parse_xref_entry(x))
-        #s = parser.parse_xref_entry(parpkg.PDFReference(48, 0)).value["URI"].value
-        #self.assertEqual(s, b'http://www.education.gov.yk.ca/')
+            parser.parse_xref_entry(x)
         fp.close()
+
+
+    def test_decrypt_aes_256(self):
+        fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0021.pdf"), "rb")
+        parser = parpkg.Parser(fp, 'foo')
+        for x in parser.xRefTable:
+            (parser.parse_xref_entry(x))
+        fp.close()
+
+
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+    def test_decrypt_aes_256_m(self):
+        fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0020.pdf"), "rb")
+        with self.assertRaises(PDFGenericError):
+            parser = parpkg.Parser(fp, b'foo')
+        fp.close()
+    
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_autheticate_owner_password(self):
         self.assertFalse(True, "Implement me!")
 
+
+
+class StringPrepTestCase(unittest.TestCase):
+
+    def test(self):
+        self.assertEqual(sals_stringprep("I\u00ADX"), "IX")
+        self.assertEqual(sals_stringprep("user"), "user")
+        self.assertEqual(sals_stringprep("USER"), "USER")
+        self.assertEqual(sals_stringprep("\u00AA"), "a")
+        self.assertEqual(sals_stringprep("\u2168"), "IX")
+        with self.assertRaises(PDFGenericError):
+            sals_stringprep("\u0007")
+        
 
 if __name__ == "__main__":
     unittest.main()

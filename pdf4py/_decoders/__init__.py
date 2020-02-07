@@ -138,6 +138,11 @@ def asciihexdecode(data, params):
     return unhexlify(data)
 
 
+@register("JBIG2Decode")
+def jbig2_decode(data, params):
+    return data
+
+
 @register("JPXDecode")
 def jpx_decode(data, params):
     return data
@@ -157,6 +162,8 @@ def decode(D : 'dict', data):
             filtersChain = (filtersChain.value,)
         filterParams = D.get('DecodeParms', {})
         for filterSpecifier in reversed(filtersChain):
+            if filterSpecifier == "Crypt":
+                continue # It has been already processed elsewhere
             decoder = decoders.get(filterSpecifier)
             if decoder is None:
                 raise PDFUnsupportedError("Filter '{}' is not supported.".format(filterSpecifier))

@@ -643,7 +643,7 @@ class Lexer:
             
         else:
             # If the input bytes sequence prefix doesn't match anything known, then...
-            raise self.__raise_lexer_error("Invalid characters sequence in input stream.")
+            raise self.__raise_lexer_error("Invalid characters sequence in input stream: '{}'.".format(chr(self.__head)))
 
         return self.__current_lexeme
 
