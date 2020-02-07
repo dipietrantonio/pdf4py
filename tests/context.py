@@ -29,6 +29,7 @@ import logging
 
 BASE_FOLDER = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "pdfs")
+ENCRYPTED_PDFS_FOLDER = os.path.join(BASE_FOLDER, "tests", "encrypted_pdfs")
 sys.path.insert(0, BASE_FOLDER)
 logging.basicConfig(level=logging.INFO)
 

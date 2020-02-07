@@ -57,7 +57,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
 
     #@unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_128(self):
-        fp = open(os.path.join(PDFS_FOLDER, "0016.pdf"), "rb")
+        fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0017.pdf"), "rb")
         parser = parpkg.Parser(fp, b'foo')
         for x in parser.xRefTable:
             print(parser.parse_xref_entry(x))
