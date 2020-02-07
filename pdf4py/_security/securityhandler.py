@@ -177,6 +177,7 @@ class StandardSecurityHandler:
     def __init__(self, password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
         self.__encryption_dict = encryption_dict
         self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
+        self.__V = self.__encryption_dict['V']
         self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
         if self.__encryption_key is None:
             self.__encryption_key = authenticate_owner_password(password, encryption_dict, self.__id_array)    
@@ -185,12 +186,34 @@ class StandardSecurityHandler:
     
 
     def decrypt_string(self, data, identifier):
-        return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
+        if self.__V == 4:
+            crypt_filter_name = self.__encryption_dict.get('StrF')
+            if crypt_filter_name is None:
+                raise PDFSyntaxError("No 'StrF' entry found in 'Encrypt' dictionary (but V = 4).")
+            crypt_filter_name = crypt_filter_name.value
+            if crypt_filter_name == 'Identity':
+                return data
+            else:
+                CF = self.__encryption_dict.get('CF')
+                if CF is None:
+                    raise PDFSyntaxError("No 'CF' entry in 'Encrypt' dictionary (but V = 4)")
+                crypt_filter = CF[crypt_filter_name]
+
+                CFM = crypt_filter.get('CFM', PDFName('None')).value
+                if CFM == 'None':
+                    raise PDFUnsupportedError("Crypt filter with CFM = None is not supported.")
+                elif CFM == 'V2':
+                    return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
+                elif CFM == 'AESV2':
+                    return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
+                else:
+                    raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
+        else:
+            return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
 
     
     def decrypt_stream(self, data, D, identifier):
-        V = self.__encryption_dict['V']
-        if V == 4:
+        if self.__V == 4:
             filters = D.get('Filters')
             if isinstance(filters, list):
                 filters = filters[-1]

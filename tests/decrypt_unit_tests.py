@@ -25,7 +25,7 @@ SOFTWARE.
 import unittest
 from .context import *
 from pdf4py._security.securityhandler import authenticate_user_password, decrypt
-
+from binascii import unhexlify
 
 class RC4TestCase(unittest.TestCase):
 
@@ -48,7 +48,8 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp = open(os.path.join(PDFS_FOLDER, "0009.pdf"), "rb")
         parser = parpkg.Parser(fp)
         encryption_dict = parser.parse_xref_entry(parser.trailer["Encrypt"]).value
-        value = authenticate_user_password(b"", encryption_dict, parser.trailer["ID"])
+        id_array = [unhexlify(x.value) if isinstance(x, parpkg.PDFHexString) else x.value for x in parser.trailer["ID"]]
+        value = authenticate_user_password(b"", encryption_dict, id_array)
         self.assertTrue(value is not None)
         s = parser.parse_xref_entry(parpkg.PDFReference(48, 0)).value["URI"].value
         self.assertEqual(s, b'http://www.education.gov.yk.ca/')

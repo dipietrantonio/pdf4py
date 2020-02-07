@@ -119,7 +119,6 @@ def flate_decode(data, params):
     bits_per_component = params.get('BitsPerComponent', 8)
     
     if predictor == 2:
-        print(params)
         return tiff_predictor(data, columns, bits_per_component, colors)
     elif predictor >= 10:
         return png_filter(data, columns, bits_per_component, colors)

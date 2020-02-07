@@ -243,9 +243,9 @@ def cbc_decrypt(data : 'bytes', key : 'bytes', iv : 'bytes'):
     input_xor = iv
     decrypted = []
     for i in range(0, len(data), 4*Nb):
-        encr_block = data[i:4*Nb]
+        encr_block = data[i:i+4*Nb]
         decr_block = xor(inv_cipher(encr_block, expanded_key, Nr),  input_xor)
         decrypted.extend(decr_block)
         input_xor = encr_block
-    pad = decrypted
+    pad = decrypted[-1]
     return bytes(decrypted[:-pad])

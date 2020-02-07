@@ -314,9 +314,7 @@ class Parser:
         if encryption_dict is not None:
             if isinstance(encryption_dict, PDFReference):
                 encryption_dict = self.parse_xref_entry(encryption_dict).value
-            print(encryption_dict)
             self._security_handler = StandardSecurityHandler(password, encryption_dict, self.trailer["ID"])
-            print(encryption_dict)
         else:
             self._security_handler = None
         self._basic_parser._security_handler = self._security_handler
