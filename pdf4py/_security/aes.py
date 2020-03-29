@@ -252,10 +252,6 @@ def cbc_decrypt(data : 'bytes', key : 'bytes', iv : 'bytes', padding = True):
         input_xor = encr_block
     if padding:
         pad = decrypted[-1]
-        if pad > 15:
-            # this has to be done because someone pads with number of bits
-            # instead of bytes.
-            pad = pad // 8
         return bytes(decrypted[:-pad])
     else:
         return bytes(decrypted)
