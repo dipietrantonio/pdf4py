@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2019 Cristian Di Pietrantonio (cristiandipietrantonio@gmail.com)
+Copyright (c) 2019 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
