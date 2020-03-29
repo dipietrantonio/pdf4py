@@ -205,11 +205,15 @@ def inv_cipher(data : 'bytes', expanded_key : 'bytes', Nr : 'int'):
 
 
 
-def cbc_encrypt(data : 'bytes', key : 'bytes', iv : 'bytes'):
+def cbc_encrypt(data : 'bytes', key : 'bytes', iv : 'bytes', padding = True):
     # pad the plaintext if necessary
     data_len = len(data)
     rem = data_len % (4*Nb)
-    data += bytes([4*Nb - rem] * (4*Nb - rem))
+    if padding:
+        data += bytes([4*Nb - rem] * (4*Nb - rem))
+    elif rem > 0:
+        raise ValueError('cbc_encrypt: data length is not a multiple'
+            'of block size and padding is turned off.')
     # key expansion
     Nk = len(key) / 4
     assert(Nk in [4.0, 6.0, 8.0])
@@ -220,7 +224,7 @@ def cbc_encrypt(data : 'bytes', key : 'bytes', iv : 'bytes'):
     input_xor = iv
     encrypted = []
     for i in range(0, len(data), 4*Nb):
-        encr_block = cipher(xor(data[i:4*Nb], input_xor), expanded_key, Nr)
+        encr_block = cipher(xor(data[i:i+4*Nb], input_xor), expanded_key, Nr)
         encrypted.extend(encr_block)
         input_xor = encr_block
     return bytes(encrypted)
@@ -248,7 +252,10 @@ def cbc_decrypt(data : 'bytes', key : 'bytes', iv : 'bytes', padding = True):
         input_xor = encr_block
     if padding:
         pad = decrypted[-1]
-        print("padding:", pad)
+        if pad > 15:
+            # this has to be done because someone pads with number of bits
+            # instead of bytes.
+            pad = pad // 8
         return bytes(decrypted[:-pad])
     else:
         return bytes(decrypted)

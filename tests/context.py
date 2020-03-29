@@ -41,6 +41,4 @@ from pdf4py._security.aes import *
 from pdf4py._decoders import tiff_predictor
 from pdf4py.exceptions import *
 
-RUN_ALL_TESTS = True
-if "RUN_ALL_TESTS" in os.environ:
-    RUN_ALL_TESTS = True if os.environ["RUN_ALL_TESTS"] == "True" else False
+RUN_ALL_TESTS = True if os.environ.get("RUN_ALL_TESTS", "True") == "True" else False

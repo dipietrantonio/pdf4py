@@ -65,11 +65,12 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp.close()
 
 
+    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_256(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0021.pdf"), "rb")
         parser = parpkg.Parser(fp, 'foo')
-        for x in parser.xRefTable:
-            (parser.parse_xref_entry(x))
+        producer = parser.parse_xref_entry(parser.xRefTable[10, 0]).value['Producer'].value.decode('utf16')
+        self.assertIn('LibreOffice', producer)
         fp.close()
 
 

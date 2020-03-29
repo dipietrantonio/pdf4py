@@ -1,6 +1,6 @@
 """
 MIT License
-Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio@gmail.com)
+Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio[at]gmail.com)
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -26,7 +26,7 @@ from .aes import cbc_decrypt
 from ..types import PDFHexString, PDFLiteralString, PDFName
 import stringprep
 import unicodedata
-
+from Crypto.Cipher import AES
 
 PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
     b"\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A"
@@ -53,7 +53,7 @@ def sals_stringprep(string):
 
 
 
-def compute_encryption_key_AESV3(password : 'str', encryption_dict : 'dict', id_array : 'list'):
+def compute_encryption_key_AESV3(password : 'str', encryption_dict : 'dict'):
     """
     Derives the key to be used with encryption/decryption algorithms from a user-defined password.
     Parameters
@@ -76,18 +76,21 @@ def compute_encryption_key_AESV3(password : 'str', encryption_dict : 'dict', id_
     prepped = sals_stringprep(password)
     truncated = prepped.encode("utf8")[:127]
     digest = sha256(truncated + O[32:32+8] + U).digest()
+    from binascii import hexlify
     if digest == O[:32]:
         intermediate = sha256(truncated + O[-8:] + U).digest()
         OE = encryption_dict["OE"]
         OE = OE.value if isinstance(OE, PDFLiteralString) else unhexlify(OE.value)
-        file_encryption_key = cbc_decrypt(OE, intermediate, [0]*16, padding = False)
+        file_encryption_key = AES.new(intermediate, mode=AES.MODE_CBC, IV=b'\x00'*16).decrypt(OE)
+        #file_encryption_key = cbc_decrypt(OE, intermediate, b'\x00'*16, padding = False)
     else:
         digest = sha256(truncated + U[32:32+8]).digest()
         if digest == U[:32]:
             intermediate = sha256(truncated + U[-8:]).digest()
             UE = encryption_dict["UE"]
             UE = UE.value if isinstance(UE, PDFLiteralString) else unhexlify(UE.value)
-            file_encryption_key = cbc_decrypt(UE, intermediate, [0]*16, padding=False)
+            file_encryption_key = AES.new(intermediate, mode=AES.MODE_CBC, IV=b'\x00'*16).decrypt(UE)
+            # file_encryption_key = cbc_decrypt(UE, intermediate, b'\x00'*16, padding = False)
         else:
             raise PDFWrongPasswordError()
     return file_encryption_key
@@ -239,13 +242,15 @@ class StandardSecurityHandler:
 
     def __init__(self, password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
         self.__encryption_dict = encryption_dict
-        self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
         self.__V = self.__encryption_dict['V']
         if self.__V not in list(range(6)):
             raise PDFGenericError("The 'V' entry in the Encrypt dictionary is given an illegal value: '{}'".format(self.__V))
         if self.__V == 5:
-            self.__encryption_key = compute_encryption_key_AESV3(password, encryption_dict, self.__id_array)
+            if not isinstance(password, str):
+                raise PDFGenericError('The password must be a str object.')
+            self.__encryption_key = compute_encryption_key_AESV3(password, encryption_dict)
         else:
+            self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
             self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
             if self.__encryption_key is None:
                 self.__encryption_key = authenticate_owner_password(password, encryption_dict, self.__id_array)    
@@ -276,9 +281,8 @@ class StandardSecurityHandler:
                 elif CFM == 'AESV2':
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
                 elif CFM == 'AESV3':
-                    dec =  cbc_decrypt(data[16:], self.__encryption_key, data[:16])
-                    print(dec)
-                    return dec
+                    decrypted = AES.new(self.__encryption_key, mode=AES.MODE_CBC, IV=data[:16]).decrypt(data[16:])
+                    return decrypted[:-decrypted[-1]]
                 else:
                     raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
         else:
@@ -313,6 +317,9 @@ class StandardSecurityHandler:
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier)
                 elif CFM == 'AESV2':
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
+                elif CFM == 'AESV3':
+                    decrypted = AES.new(self.__encryption_key, mode=AES.MODE_CBC, IV=data[:16]).decrypt(data[16:])
+                    return decrypted[:-decrypted[-1]]
                 else:
                     raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
 
