@@ -21,13 +21,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-
 import unittest
-from .functional_tests import *
-from .unit_tests import *
-from .aes_unit_tests import *
-from .decrypt_unit_tests import *
-from .decoders_unit_tests import *
+from pdf4py._decoders import ascii85decode
+from binascii import hexlify
 
-if __name__ == "__main__":
-    unittest.main()
+
+class DecodersTestCase(unittest.TestCase):
+
+
+    def test_ascii85_decode(self):
+        ascii85msg = '<~6Z6LH+Co%nDe*F#+@/pn8P(m!~>'
+        original = 'Code decodes ASCII85'.encode('ascii')
+        self.assertEqual(original, ascii85decode(ascii85msg, None))
+
+        

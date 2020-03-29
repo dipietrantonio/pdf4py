@@ -33,6 +33,7 @@ decoders = {}
 def register(filterName):
     def wrapper(func):
         decoders[filterName] = func
+        return func
     return wrapper
 
 
@@ -151,6 +152,23 @@ def jpx_decode(data, params):
 @register("DCTDecode")
 def dct_decode(data, params):
     return data
+
+
+@register("ASCII85Decode")
+def ascii85decode(data, params):
+    result = bytearray()
+    for i in range(2, len(data) - 4, 5):
+        intermediate = sum((ord(x) - 33) * 85**pos for pos, x in enumerate(reversed(data[i:i+5])))
+        base_256 = bytearray() 
+        while intermediate > 0:
+            div, rem = intermediate // 256, intermediate % 256
+            base_256.insert(0, rem)
+            if div == 0:
+                break
+            else:   
+                intermediate = div
+        result.extend(base_256)
+    return bytes(result)
 
 
 def decode(D : 'dict', data):

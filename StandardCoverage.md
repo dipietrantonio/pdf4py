@@ -25,7 +25,7 @@ Nothing to implement here, just introductory stuff.
 | 7.3.10            | Indirect objects                | ✓                                      |
 | 7.4               | Filters                         | Minimal support                        |
 | 7.4.2             | ASCIIHexDecode                  | ~ (Testing is missing still)           |
-| 7.4.3             | ASCII85Decode                   | ✗                                      |
+| 7.4.3             | ASCII85Decode                   | ✓                                      |
 | 7.4.4             | LZWDecode                       | ✗                                      |
 | 7.4.4             | FlateDecode                     | ~ (Predictors must still be tested)    |
 | 7.4.5             | RunLengthDecode                 | ✗                                      |
