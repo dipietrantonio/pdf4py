@@ -1,7 +1,7 @@
 """
 MIT License
 
-Copyright (c) 2019 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)
+Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -169,6 +169,24 @@ def ascii85decode(data, params):
                 intermediate = div
         result.extend(base_256)
     return bytes(result)
+
+
+@register('RunLengthDecode')
+def runlengthdecode(data, params):
+    m = len(data)
+    i = 0
+    result = bytearray()
+    while i < m:
+        length = data[i]
+        if length == 128: break
+        elif length < 128:
+            result.extend(data[i+1:i+1+length+1])
+            i = i + 1 + length + 1
+        else:
+            result.extend(data[i+1:i+2] * (257 -length))
+            i = i + 2
+    return bytes(result)
+
 
 
 def decode(D : 'dict', data):

@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 import unittest
-from pdf4py._decoders import ascii85decode
+from pdf4py._decoders import ascii85decode, runlengthdecode
 from binascii import hexlify
 
 
@@ -34,4 +34,9 @@ class DecodersTestCase(unittest.TestCase):
         original = 'Code decodes ASCII85'.encode('ascii')
         self.assertEqual(original, ascii85decode(ascii85msg, None))
 
-        
+    
+    def test_runlength_decode(self):
+        rle = b'\x0bHello world.\x82c'
+        decoded = b'Hello world.' + (257 - 130) * b'c'
+        self.assertEqual(decoded, runlengthdecode(rle, None))
+

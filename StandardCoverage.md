@@ -2,7 +2,7 @@
 
 In this file the progress in implementing all the features in the [PDF 1.7 standard](http://wwwimages.adobe.com/www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf) is tracked.
 As the development goes on, the various sections decribing features that have been supported will be marked with an check (✓) in the following table.
-The tilde mark (~) means almost every aspect is supported.
+The tilde mark (~) means almost every aspect is supported or that the implementation seems to work but more testing is necessary.
 
 ## Chapters 1 - 6
 
@@ -23,12 +23,12 @@ Nothing to implement here, just introductory stuff.
 | 7.3.8             | Stream objects                  | ~ (F parameter not supported yet)      |
 | 7.3.9             | Null object                     | ✓                                      |
 | 7.3.10            | Indirect objects                | ✓                                      |
-| 7.4               | Filters                         | Minimal support                        |
+| 7.4               | Filters                         | ~                                      |
 | 7.4.2             | ASCIIHexDecode                  | ~ (Testing is missing still)           |
 | 7.4.3             | ASCII85Decode                   | ✓                                      |
 | 7.4.4             | LZWDecode                       | ✗                                      |
 | 7.4.4             | FlateDecode                     | ~ (Predictors must still be tested)    |
-| 7.4.5             | RunLengthDecode                 | ✗                                      |
+| 7.4.5             | RunLengthDecode                 | ✓                                      |
 | 7.4.6             | CCITTFaxDecode                  | ~ (data returned 'as is')              |
 | 7.4.7             | JBIG2Decode                     | ~ (data returned 'as is')              |
 | 7.4.8             | DCTDecode                       | ~ (data returned 'as is')              |
