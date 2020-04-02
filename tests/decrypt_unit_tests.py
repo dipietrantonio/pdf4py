@@ -27,6 +27,8 @@ from .context import *
 from pdf4py._security.securityhandler import authenticate_user_password, decrypt, sals_stringprep
 from binascii import unhexlify
 
+
+
 class RC4TestCase(unittest.TestCase):
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
@@ -60,7 +62,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
     def test_decrypt_aes_128(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0017.pdf"), "rb")
         parser = parpkg.Parser(fp, b'foo')
-        for x in parser.xRefTable:
+        for x in parser.xreftable:
             parser.parse_xref_entry(x)
         fp.close()
 
@@ -69,7 +71,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
     def test_decrypt_aes_256(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0021.pdf"), "rb")
         parser = parpkg.Parser(fp, 'foo')
-        producer = parser.parse_xref_entry(parser.xRefTable[10, 0]).value['Producer'].value.decode('utf16')
+        producer = parser.parse_xref_entry(parser.xreftable[10, 0]).value['Producer'].value.decode('utf16')
         self.assertIn('LibreOffice', producer)
         fp.close()
 

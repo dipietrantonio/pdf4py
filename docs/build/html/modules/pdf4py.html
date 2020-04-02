@@ -1,0 +1,215 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta charset="utf-8" />
+    <title>parser module &#8212; pdf4py 0.1.0 documentation</title>
+    <link rel="stylesheet" href="../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-pdf4py.parser">
+<span id="parser-module"></span><h1>parser module<a class="headerlink" href="#module-pdf4py.parser" title="Permalink to this headline">¶</a></h1>
+<p>MIT License</p>
+<p>Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
+<dl class="class">
+<dt id="pdf4py.parser.Parser">
+<em class="property">class </em><code class="sig-prename descclassname">pdf4py.parser.</code><code class="sig-name descname">Parser</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">password=b''</em><span class="sig-paren">)</span><a class="headerlink" href="#pdf4py.parser.Parser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse a PDF document to retrieve PDF objects composing it.</p>
+<p>The constructor takes as argument an object <code class="docutils literal notranslate"><span class="pre">source</span></code>, the sequence of bytes the PDF document
+is encoded into. It can be of type <code class="docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> or file pointer opened for reading
+in binary mode. Optionally, the second argument is the password to be provided if the document
+is protected through encryption. For example,</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pdf4py.parser</span> <span class="kn">import</span> <span class="n">Parser</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s1">&#39;path/to/file.pdf&#39;</span><span class="p">,</span> <span class="p">,</span><span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+<span class="gp">&gt;&gt;&gt; </span>    <span class="n">parser</span> <span class="o">=</span> <span class="n">Parser</span><span class="p">(</span><span class="n">fp</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Creates a new instance of <code class="docutils literal notranslate"><span class="pre">Parser</span></code>. The constructor reads the Cross Reference Table of the
+PDF document to retrieve the list of PDF objects that are present and parsable in the document.
+The Cross Reference Table is then available as attribute of the newly created <code class="docutils literal notranslate"><span class="pre">Parser</span></code>
+instance. For more information about the cross reference table, see the <code class="docutils literal notranslate"><span class="pre">XRefTable</span></code>
+documentation.</p>
+<dl class="attribute">
+<dt id="pdf4py.parser.Parser.TRAILER_FIELDS">
+<code class="sig-name descname">TRAILER_FIELDS</code><em class="property"> = {'Encrypt', 'ID', 'Info', 'Prev', 'Root', 'Size'}</em><a class="headerlink" href="#pdf4py.parser.Parser.TRAILER_FIELDS" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="pdf4py.parser.Parser.parse_xref_entry">
+<code class="sig-name descname">parse_xref_entry</code><a class="headerlink" href="#pdf4py.parser.Parser.parse_xref_entry" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pdf4py.parser.SequentialParser">
+<em class="property">class </em><code class="sig-prename descclassname">pdf4py.parser.</code><code class="sig-name descname">SequentialParser</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#pdf4py.parser.SequentialParser" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements a parser that is able to parse a PDF objects by scanning the input bytes sequence.</p>
+<p>In other words, objects are extracted in the order they appear in the stream. For this
+reason it is used to parse <em>Content Streams</em>.</p>
+<p>Note that this class is not able to parse a complete PDF file since the process requires
+random access in the file to retrieve information when required (for example to resolve a
+reference pointing at the Integer holding the length of a stream). However, this class is
+used in defining the more powerful <code class="docutils literal notranslate"><span class="pre">Parser</span></code>.</p>
+<p>The constructor that must be used by users takes a positional argument, <code class="docutils literal notranslate"><span class="pre">source</span></code>, being
+the source bytes stream. It can by a <code class="docutils literal notranslate"><span class="pre">byte</span></code>, <code class="docutils literal notranslate"><span class="pre">bytearray</span></code> or a file pointer opened in
+binary mode. Other keyword arguments are used internally in pdf4y, specifically by
+the <code class="docutils literal notranslate"><span class="pre">Parser</span></code> class.</p>
+<dl class="method">
+<dt id="pdf4py.parser.SequentialParser.parse_object">
+<code class="sig-name descname">parse_object</code><span class="sig-paren">(</span><em class="sig-param">obj_num: Optional[tuple] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdf4py.parser.SequentialParser.parse_object" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse the next PDF object from the token stream.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>obj_num</strong> (<em>tuple</em>) – Tuple <code class="docutils literal notranslate"><span class="pre">(seq,</span> <span class="pre">gen)</span></code>, <code class="docutils literal notranslate"><span class="pre">seq</span></code> and <code class="docutils literal notranslate"><span class="pre">gen</span></code> being the sequence and the generation number
+of the object that is going to be parsed respectively. These values are known when the
+parsing action is instructed after a XRefTable lookup. This parameter is used only by
+the <code class="docutils literal notranslate"><span class="pre">Parser</span></code> class when the PDF is encrypted.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>A PDF object.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pdf4py.parser.XRefTable">
+<em class="property">class </em><code class="sig-prename descclassname">pdf4py.parser.</code><code class="sig-name descname">XRefTable</code><span class="sig-paren">(</span><em class="sig-param">previous: pdf4py.parser.XRefTable</em>, <em class="sig-param">inuse_objects: dict</em>, <em class="sig-param">free_objects: set</em>, <em class="sig-param">compressed_objects: Optional[dict] = None</em><span class="sig-paren">)</span><a class="headerlink" href="#pdf4py.parser.XRefTable" title="Permalink to this definition">¶</a></dt>
+<dd><p>Implements the functionalities of a Cross Reference Table.</p>
+<p>The Cross Reference Table (XRefTable) is the index of all the PDF objects in a PDF file. An object
+is uniquely identified with a tuple <code class="docutils literal notranslate"><span class="pre">(s,</span> <span class="pre">g)</span></code> where <code class="docutils literal notranslate"><span class="pre">s</span></code> is the sequence number and <code class="docutils literal notranslate"><span class="pre">g</span></code> is the
+generation number. Then a  XRefTable   There are mainly two types of entries in such table:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">XrefInUseEntry</span></code> entries that represent objects that are part of the PDF document’s current
+structure, and</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tuple</span></code> entries pointing at <strong>free objects</strong>, objects that are no longer used (for example,
+they have been eliminated in a modification of the document).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">XrefCompressedEntry</span></code> entries that are objects in use but stored in a compressed stream.</p></li>
+</ul>
+<p>The listed three object types are to be used with the <code class="docutils literal notranslate"><span class="pre">Parser.parse_xref_entry</span></code> class method
+to actually retrieve the associated object.</p>
+<p>There are two main ways to query a <code class="docutils literal notranslate"><span class="pre">XRefTable</span></code> instance:</p>
+<ul class="simple">
+<li><p>Iterating over the instance itself to get references to <em>in use</em> and <em>compressed</em> objects (but <em>not</em> free objects).</p></li>
+<li><p>Accessing a particular entry using the square brackets. A bidimentional index is used,
+representing the sequence and generation numbers. This is because it implements the __getitem__
+method that is used by the parser to look up objects if required during the parsing process.</p></li>
+</ul>
+<dl class="method">
+<dt id="pdf4py.parser.XRefTable.previous">
+<em class="property">property </em><code class="sig-name descname">previous</code><a class="headerlink" href="#pdf4py.parser.XRefTable.previous" title="Permalink to this definition">¶</a></dt>
+<dd><p>Points to the <code class="docutils literal notranslate"><span class="pre">XRefTable</span></code> instance that is associated to the <code class="docutils literal notranslate"><span class="pre">/Prev</span></code> key in the trailer
+dictionary of the current cross-reference table.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">pdf4py</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2020, Cristian Di Pietrantonio.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.4.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="../_sources/modules/pdf4py.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

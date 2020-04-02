@@ -216,7 +216,7 @@ class BasicParserTestCase(unittest.TestCase):
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_simple_sequence(self):
         sequence = b"\n".join(pdfParts[:2] + pdfParts[3:])
-        par = parpkg.BasicParser(sequence)
+        par = parpkg.SequentialParser(sequence)
         lpar = list(par)
         self.assertEqual(lpar, [346, 123, True, False, 123, 43445, 17, -98, 0,
             34.5, -3.62, 123.6, 4.0, -0.002, 0.0, lexpkg.PDFLiteralString(b" This is a string "), lexpkg.PDFLiteralString(b"""Strings may contain newlines
@@ -254,7 +254,7 @@ lexpkg.PDFLiteralString(b"+"), lexpkg.PDFLiteralString(b"+"), lexpkg.PDFHexStrin
             }
         }
 
-        par = parpkg.BasicParser(dictExample)
+        par = parpkg.SequentialParser(dictExample, content_stream_mode = False)
         item = next(par)
         self.assertEqual(item, dictCorrectParsed)
 
@@ -262,7 +262,7 @@ lexpkg.PDFLiteralString(b"+"), lexpkg.PDFLiteralString(b"+"), lexpkg.PDFHexStrin
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_indirect_object_and_indirect_reference(self):
         data = b"12 0 obj ( Brillig ) endobj 12 0 R"
-        par = parpkg.BasicParser(data)
+        par = parpkg.SequentialParser(data, content_stream_mode = False)
         item1 = next(par)
         item2 = par.parse_object()
         self.assertIsInstance(item1, parpkg.PDFIndirectObject)
@@ -281,14 +281,15 @@ this is the content of the stream.
 endstream
 endobj
 """
-        par = parpkg.BasicParser(sourceStream, lambda D, read, x = None : (D["Length"], lambda : read(D["Length"])))
+        par = parpkg.SequentialParser(sourceStream, 
+            stream_reader = lambda D, read, x = None : (D["Length"], lambda : read(D["Length"])), content_stream_mode = False)
         item = next(par)
         val = bytes(item.value.stream())
         self.assertEqual(val, b"this is the content of the stream.")
 
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_parse_empty_input(self):
-        par = parpkg.BasicParser(b"")
+        par = parpkg.SequentialParser(b"", content_stream_mode = False)
         with self.assertRaises(StopIteration):
             next(par)
 
@@ -300,8 +301,8 @@ endobj
             (A stream with an indirect length) Tj
             ET"""
         with self.assertRaises(parpkg.PDFSyntaxError):
-            list(parpkg.BasicParser(contentStream))
-        par = parpkg.BasicParser(contentStream, content_stream_mode = True)
+            list(parpkg.SequentialParser(contentStream, content_stream_mode = False))
+        par = parpkg.SequentialParser(contentStream, content_stream_mode = True)
         parsed = list(par)
         expected = [parpkg.PDFOperator("BT"), parpkg.PDFName("F1"), 12, parpkg.PDFOperator("Tf"), 72, 
             712, parpkg.PDFOperator("Td"), parpkg.PDFLiteralString(b"A stream with an indirect length"), parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
@@ -330,7 +331,7 @@ startxref
 0
 %%EOF"""
         parser = parpkg.Parser(sample)
-        parsedObjects = [(x.object_number, x.generation_number) for x in parser.xRefTable]
+        parsedObjects = [(x.object_number, x.generation_number) for x in parser.xreftable]
         self.assertEqual(parsedObjects, [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)])
 
 

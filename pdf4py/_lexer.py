@@ -26,12 +26,6 @@ from ._charset import *
 from .types import *
 import _io
 from .exceptions import PDFLexicalError
-# ------------------------------------------------------------------------------------
-# Lexeme classes
-# Here are defined all the classes used to represent a valid lexeme in the pdf language
-# that cannot otherwise be represented with standard python types.
-# ------------------------------------------------------------------------------------
-
 
 
 class Seekable:
@@ -101,9 +95,9 @@ class Lexer:
         bytes.
 
 
-        Parameters:
-        -----------
-        source : (read/tell/seek)-supporting type, bytes or bytesarray
+        Parameters
+        ----------
+        source : (read/tell/seek)-supporting type, bytes or bytearray
             The source from where bytes are read.
         
         contextSize : int
@@ -198,8 +192,8 @@ class Lexer:
         `C`.
 
 
-        Returns:
-        --------
+        Returns
+        -------
         A bytes sequence representing the content around the Lexer's head position.
         """
         # collect the context in which the error occurred
@@ -574,14 +568,14 @@ class Lexer:
         sequence is reached.
         
 
-        Returns:
-        --------
+        Returns
+        -------
         An object that can be instance of: str, int, float, bool, function, PDFName, PDFKeyword,
         PDFHexString, PDFSingleton.
 
 
-        Raises:
-        -------
+        Raises
+        ------
         StopIteration on End-Of-Sequence, PDFLexicalError when an unexpected input byte is
         encountered.
         """
