@@ -36,21 +36,22 @@ class XRefTable:
     Implements the functionalities of a Cross Reference Table.
     
     The Cross Reference Table (XRefTable) is the index of all the PDF objects in a PDF file. An object
-    is uniquely identified with a tuple ``(s, g)`` where ``s`` is the sequence number and ``g`` is the
+    is uniquely identified with a tuple `(s, g)` where `s` is the sequence number and `g` is the
     generation number. Then a  XRefTable   There are mainly two types of entries in such table:
 
-    - ``XrefInUseEntry`` entries that represent objects that are part of the PDF document's current 
+    - `XrefInUseEntry` entries that represent objects that are part of the PDF document's current 
       structure, and
-    - ``tuple`` entries pointing at **free objects**, objects that are no longer used (for example,
+    - `tuple` entries pointing at *free objects*, objects that are no longer used (for example,
       they have been eliminated in a modification of the document).
-    - ``XrefCompressedEntry`` entries that are objects in use but stored in a compressed stream.
+    - `XrefCompressedEntry` entries that are objects in use but stored in a compressed stream.
 
-    The listed three object types are to be used with the ``Parser.parse_xref_entry`` class method
+    The listed three object types are to be used with the `Parser.parse_xref_entry` class method
     to actually retrieve the associated object.
 
-    There are two main ways to query a ``XRefTable`` instance:
+    There are two main ways to query a `XRefTable` instance:
 
-    - Iterating over the instance itself to get references to *in use* and *compressed* objects (but *not* free objects).
+    - Iterating over the instance itself to get references to *in use* and *compressed* objects
+      (but *not* free objects).
     - Accessing a particular entry using the square brackets. A bidimentional index is used, 
       representing the sequence and generation numbers. This is because it implements the __getitem__ 
       method that is used by the parser to look up objects if required during the parsing process.
@@ -67,7 +68,7 @@ class XRefTable:
     @property
     def previous(self):
         """
-        Points to the ``XRefTable`` instance that is associated to the ``/Prev`` key in the trailer
+        Points to the `XRefTable` instance that is associated to the `/Prev` key in the trailer
         dictionary of the current cross-reference table.
         """
         return self.__previous
@@ -81,17 +82,17 @@ class XRefTable:
         Parameters
         ----------
         key : tuple
-            ``key = (seq, gen)`` is the tuple containing the sequence and generation numbers used
+            `key = (seq, gen)` is the tuple containing the sequence and generation numbers used
             to identify the object.
         
         Returns
         -------
-        - ``XrefInUseEntry``, ``XrefCompressedEntry`` if an in use entry is found,
-        - ``None`` if the required object has been freed.
+        - `XrefInUseEntry`, `XrefCompressedEntry` if an in use entry is found,
+        - `None` if the required object has been freed.
 
         Raises
         ------
-        ``KeyError`` if no entry corresponds to the given key.
+        `KeyError` if no entry corresponds to the given key.
         """
         v = self.__inuse_objects.get(key)
         if v is not None:
@@ -163,12 +164,12 @@ class SequentialParser:
     Note that this class is not able to parse a complete PDF file since the process requires
     random access in the file to retrieve information when required (for example to resolve a 
     reference pointing at the Integer holding the length of a stream). However, this class is
-    used in defining the more powerful ``Parser``.
+    used in defining the more powerful `Parser`.
 
-    The constructor that must be used by users takes a positional argument, ``source``, being
-    the source bytes stream. It can by a ``byte``, ``bytearray`` or a file pointer opened in
+    The constructor that must be used by users takes a positional argument, `source`, being
+    the source bytes stream. It can by a `byte`, `bytearray` or a file pointer opened in
     binary mode. Other keyword arguments are used internally in pdf4y, specifically by 
-    the ``Parser`` class.
+    the `Parser` class.
     """
 
 
@@ -176,7 +177,7 @@ class SequentialParser:
         """
         Initialize the parser by setting the underlying lexical analyzer and load the fist lexeme.
         From now on the following invariant must be kept: before any call the to 
-        ``SequentialParser.parse_object`` class method, the ``current_lexeme`` property of the
+        `SequentialParser.parse_object` class method, the `current_lexeme` property of the
         lexer must be set to the fist unprocessed lexeme in the input.
         """
         # read the header
@@ -194,7 +195,7 @@ class SequentialParser:
 
     def _raise_syntax_error(self, msg : 'str'):
         """
-        Raises an exception with a message containing the string ``msg`` accompanied with
+        Raises an exception with a message containing the string `msg` accompanied with
         the context of where the associated exception has happened (the Lexer's head current position).
         """
         context, error_position, relative_error_position = self._lexer.get_context()
@@ -221,14 +222,14 @@ class SequentialParser:
         Parameters
         ----------
         obj_num : tuple
-            Tuple ``(seq, gen)``, ``seq`` and ``gen`` being the sequence and the generation number
+            Tuple `(seq, gen)`, `seq` and `gen` being the sequence and the generation number
             of the object that is going to be parsed respectively. These values are known when the
             parsing action is instructed after a XRefTable lookup. This parameter is used only by
-            the ``Parser`` class when the PDF is encrypted.
+            the `Parser` class when the PDF is encrypted.
         
         Returns
         -------
-        A PDF object.
+        obj : one of the PDF types in modules `types`.
         """
         if self.__ended:
             raise StopIteration()
@@ -367,8 +368,8 @@ class Parser:
     """
     Parse a PDF document to retrieve PDF objects composing it.
 
-    The constructor takes as argument an object ``source``, the sequence of bytes the PDF document 
-    is encoded into. It can be of type ``bytes``, ``bytearray`` or file pointer opened for reading
+    The constructor takes as argument an object `source`, the sequence of bytes the PDF document 
+    is encoded into. It can be of type `bytes`, `bytearray` or file pointer opened for reading
     in binary mode. Optionally, the second argument is the password to be provided if the document
     is protected through encryption. For example,
 
@@ -379,23 +380,20 @@ class Parser:
         >>>     parser = Parser(fp)
     
     
-    Creates a new instance of ``Parser``. The constructor reads the Cross Reference Table of the
+    Creates a new instance of `Parser`. The constructor reads the Cross Reference Table of the
     PDF document to retrieve the list of PDF objects that are present and parsable in the document.
-    The Cross Reference Table is then available as attribute of the newly created ``Parser``
-    instance. For more information about the cross reference table, see the ``XRefTable``
+    The Cross Reference Table is then available as attribute of the newly created `Parser`
+    instance. For more information about the cross reference table, see the `XRefTable`
     documentation.
+
+    After the instantiation, `parser` will have a `XRefTable` instance associated to the attribute
+    `xreftable`. To retrieve PDF objects pass entries in the table to the `Parser.parse_xref_entry`
+    method.
     """
     TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
 
     def __init__(self, source, password = b""):
-        """
-        Initialize the parser by setting the underlying lexical analyzer and load the fist lexeme.
-        From now on the following invariant must be kept: before any call the to BaseParser._parse_object
-        method, the current_lexeme property of the lexer must be set to the fist unprocessed lexeme in
-        the input.
-        """
-        # read the header
         self._basic_parser = SequentialParser(source, stream_reader = self._stream_reader, content_stream_mode = False)
         self._read_header()
         self.__parse_xref_table()
@@ -426,7 +424,28 @@ class Parser:
 
     @lru_cache(maxsize=256)
     def parse_xref_entry(self, xref_entry):
-        # TODO: find proper name to this method
+        """
+        Parse and retrieve the PDF object `xref_entry` points to.
+
+        Description
+        -----------
+        PDF objects are not parsed when an instance of `Parser` is being created. Instead,
+        parsing occurs when this method is called. To avoid that the same object is being
+        parsed too many times, a LRU cache is being used to keep in memory the last 256
+        parsed objects.
+
+        Parameters
+        ----------
+        xref_entry : XrefInUseEntry or XrefCompressedEntry or PDFReference
+            An entry in the XRefTable or a PDFReference object pointing to a PDFObject within
+            the file that has to be parsed.
+
+        Returns
+        -------
+        ind_obj : PDFIndirectObject
+            Each PDF object that can be referred to using the XRefTable or a PDFReference is 
+            wrapped into a container called IndirectObject. 
+        """
         logging.debug("parse_xref_entry with input: " + str(xref_entry))
         if isinstance(xref_entry, PDFReference):
             logging.debug("It is a PDFReference")
@@ -518,11 +537,14 @@ class Parser:
 
     def __parse_xref_stream(self):
         """
-        Beginning with PDF 1.5, cross-reference information may be stored in a cross-reference stream instead of in a
-        cross-reference table. Cross-reference streams provide the following advantages:
-            - A more compact representation of cross-reference information
-            - The ability to access compressed objects that are stored in object streams (see 7.5.7, "Object Streams")
-              and to allow new cross-reference entry types to be added in the future
+        Beginning with PDF 1.5, cross-reference information may be stored in a cross-reference
+        stream instead of in a cross-reference table. Cross-reference streams provide the 
+        following advantages:
+        
+            - A more compact representation of cross-reference information,
+            - The ability to access compressed objects that are stored in object streams 
+              (see 7.5.7, "Object Streams") and to allow new cross-reference entry types to be added
+              in the future
         """
         logging.debug("Parsing a xref stream..")
         o = self._basic_parser.parse_object()

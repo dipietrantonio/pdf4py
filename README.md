@@ -2,6 +2,24 @@
 
 A PDF parser written in Python 3 with no external dependencies.
 
+## Quick example
+
+Here is a quick demostration on how to use pdf4py.
+
+```python
+from pdf4py.parser import Parser
+>>> fp = open('tests/pdfs/0000.pdf', 'rb')
+>>> parser = Parser(fp)
+>>> info_ref = parser.trailer['Info']
+>>> print(info_ref)
+PDFReference(object_number=114, generation_number=0)
+>>> info = parser.parse_xref_entry(info_ref).value
+>>> print(info)
+{'Creator': PDFLiteralString(value=b'PaperCept Conference Management System'), ..., 'Producer': PDFLiteralString(value=b'PDFlib+PDI 7.0.3 (Perl 5.8.0/Linux)')}
+>>> creator = info['Creator'].value.decode('utf8')
+>>> print(creator)
+PaperCept Conference Management System
+```
 ## Introduction
 
 The module `pdf4py` allows the user to interact with a PDF file at a low level and to build higher
@@ -27,14 +45,12 @@ why I delved into the PDF 1.7 specification: from that moment on, I got more and
 in the inner workings of one of the most important and ubiquitous file format. And what's
 a better way to understand the PDF than writing a parser for it?
 
+
 ## PDF standard coverage
 
 You can check how many features of the standard are implemented and what is the progress on
 supporting the missing ones by checking the standard coverage [page](StandardCoverage.md).
 
-## Example usage
-
---
 
 ## Contributing
 
