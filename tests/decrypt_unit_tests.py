@@ -82,11 +82,6 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         with self.assertRaises(PDFGenericError):
             parser = parpkg.Parser(fp, b'foo')
         fp.close()
-    
-
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
-    def test_autheticate_owner_password(self):
-        self.assertFalse(True, "Implement me!")
 
 
 

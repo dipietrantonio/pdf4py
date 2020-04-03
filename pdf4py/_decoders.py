@@ -24,8 +24,8 @@ SOFTWARE.
 import zlib
 from math import floor
 from binascii import unhexlify
-from ..exceptions import PDFUnsupportedError
-from .._charset import BLANKS
+from .exceptions import PDFUnsupportedError
+from ._charset import BLANKS
 
 decoders = {}
 

@@ -48,6 +48,7 @@ Nothing to implement here, just introductory stuff.
 | 7.6.4             | Public Key Security Handler     | ✗                                      |
 | 7.6.5             | Crypt Filters                   | ✓                                      |
 
+The rest of the chapter, i.e. document structure, is not implemented.
 
 ## Chapter 8 - Graphics
 

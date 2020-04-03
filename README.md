@@ -2,6 +2,11 @@
 
 A PDF parser written in Python 3 with no external dependencies.
 
+The module `pdf4py` allows the user to interact with a PDF file at a low level and to build higher
+level functionalities (e.g. text and/or image extraction). In particular, it defines the class
+`Parser` that reads the Cross Reference Table of a PDF document and uses its entries to give the
+user the ability to locate PDF objects within the file and parse them into suitable Python objects.
+
 ## Quick example
 
 Here is a quick demostration on how to use pdf4py.
@@ -15,17 +20,14 @@ from pdf4py.parser import Parser
 PDFReference(object_number=114, generation_number=0)
 >>> info = parser.parse_xref_entry(info_ref).value
 >>> print(info)
-{'Creator': PDFLiteralString(value=b'PaperCept Conference Management System'), ..., 'Producer': PDFLiteralString(value=b'PDFlib+PDI 7.0.3 (Perl 5.8.0/Linux)')}
+{'Creator': PDFLiteralString(value=b'PaperCept Conference Management System'),
+    ... , 'Producer': PDFLiteralString(value=b'PDFlib+PDI 7.0.3 (Perl 5.8.0/Linux)')}
 >>> creator = info['Creator'].value.decode('utf8')
 >>> print(creator)
 PaperCept Conference Management System
 ```
-## Introduction
 
-The module `pdf4py` allows the user to interact with a PDF file at a low level and to build higher
-level functionalities (e.g. text and/or image extraction). In particular, it defines the class
-`Parser` that reads the Cross Reference Table of a PDF document and uses its entries to give the
-user the ability to locate PDF objects within the file and parse them into suitable Python objects.
+## Extracting text or images
 
 Extracting text from a PDF and other higher level analysis tasks are not natively supported because
 of two reasons:
@@ -54,7 +56,7 @@ supporting the missing ones by checking the standard coverage [page](StandardCov
 
 ## Contributing
 
-You can contribute by:
+Contributions are more than welcome! You can
 
 - filing a new issue;
 - proposing changes and additions through a pull request.
