@@ -12,13 +12,13 @@ user the ability to locate PDF objects within the file and parse them into suita
 Here is a quick demostration on how to use pdf4py.
 
 ```python
-from pdf4py.parser import Parser
+>>> from pdf4py.parser import Parser
 >>> fp = open('tests/pdfs/0000.pdf', 'rb')
 >>> parser = Parser(fp)
 >>> info_ref = parser.trailer['Info']
 >>> print(info_ref)
 PDFReference(object_number=114, generation_number=0)
->>> info = parser.parse_xref_entry(info_ref).value
+>>> info = parser.parse_reference(info_ref).value
 >>> print(info)
 {'Creator': PDFLiteralString(value=b'PaperCept Conference Management System'),
     ... , 'Producer': PDFLiteralString(value=b'PDFlib+PDI 7.0.3 (Perl 5.8.0/Linux)')}
@@ -39,7 +39,7 @@ structured document from the content point of view.
 
 Therefore, they require a separate implementation built on top of `pdf4py`.
 
-## Why
+## Why this package
 
 One day at work I was asked to analyze some PDF files; to my surprise I have discovered that
 there is not an established Python module to easily parse a PDF document. In order to understand

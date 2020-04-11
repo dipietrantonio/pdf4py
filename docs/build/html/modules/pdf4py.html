@@ -32,6 +32,23 @@
             
   <div class="section" id="module-pdf4py.parser">
 <span id="parser-module"></span><h1>parser module<a class="headerlink" href="#module-pdf4py.parser" title="Permalink to this headline">¶</a></h1>
+<p>MIT License</p>
+<p>Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)</p>
+<p>Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the “Software”), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:</p>
+<p>The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.</p>
+<p>THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.</p>
 <dl class="class">
 <dt id="pdf4py.parser.Parser">
 <em class="property">class </em><code class="sig-prename descclassname">pdf4py.parser.</code><code class="sig-name descname">Parser</code><span class="sig-paren">(</span><em class="sig-param">source</em>, <em class="sig-param">password=b''</em><span class="sig-paren">)</span><a class="headerlink" href="#pdf4py.parser.Parser" title="Permalink to this definition">¶</a></dt>
@@ -132,7 +149,8 @@ they have been eliminated in a modification of the document).</p></li>
 to actually retrieve the associated object.</p>
 <p>There are two main ways to query a <cite>XRefTable</cite> instance:</p>
 <ul class="simple">
-<li><p>Iterating over the instance itself to get references to <em>in use</em> and <em>compressed</em> objects (but <em>not</em> free objects).</p></li>
+<li><p>Iterating over the instance itself to get references to <em>in use</em> and <em>compressed</em> objects
+(but <em>not</em> free objects).</p></li>
 <li><p>Accessing a particular entry using the square brackets. A bidimentional index is used,
 representing the sequence and generation numbers. This is because it implements the __getitem__
 method that is used by the parser to look up objects if required during the parsing process.</p></li>
@@ -159,6 +177,15 @@ dictionary of the current cross-reference table.</p>
 
 
 
+<p class="blurb">A PDF parser written in Python 3 with no external dependencies.</p>
+
+
+
+
+<p>
+<iframe src="https://ghbtns.com/github-btn.html?user=Halolegend94&repo=pdf4py&type=watch&count=true&size=large&v=2"
+  allowtransparency="true" frameborder="0" scrolling="0" width="200px" height="35px"></iframe>
+</p>
 
 
 

@@ -54,3 +54,10 @@ html_theme = 'alabaster'
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+html_theme_options = {
+    'github_user': 'Halolegend94',
+    'github_repo': 'pdf4py',
+    'description' : 'A PDF parser written in Python 3 with no external dependencies.',
+    'page_width' : '1000px',
+}

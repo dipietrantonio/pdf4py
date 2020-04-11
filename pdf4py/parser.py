@@ -1,26 +1,3 @@
-"""
-MIT License
-
-Copyright (c) 2019-2020 Cristian Di Pietrantonio (cristiandipietrantonio[AT]gmail.com)
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-"""
 import logging
 from contextlib import suppress
 from functools import lru_cache, partial
@@ -45,7 +22,7 @@ class XRefTable:
       they have been eliminated in a modification of the document).
     - `XrefCompressedEntry` entries that are objects in use but stored in a compressed stream.
 
-    The listed three object types are to be used with the `Parser.parse_xref_entry` class method
+    The listed three object types are to be used with the `Parser.parse_reference` class method
     to actually retrieve the associated object.
 
     There are two main ways to query a `XRefTable` instance:
@@ -387,7 +364,7 @@ class Parser:
     documentation.
 
     After the instantiation, `parser` will have a `XRefTable` instance associated to the attribute
-    `xreftable`. To retrieve PDF objects pass entries in the table to the `Parser.parse_xref_entry`
+    `xreftable`. To retrieve PDF objects pass entries in the table to the `Parser.parse_reference`
     method.
     """
     TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
@@ -400,7 +377,7 @@ class Parser:
         encryption_dict = self.trailer.get("Encrypt")
         if encryption_dict is not None:
             if isinstance(encryption_dict, PDFReference):
-                encryption_dict = self.parse_xref_entry(encryption_dict).value
+                encryption_dict = self.parse_reference(encryption_dict).value
             self._security_handler = StandardSecurityHandler(password, encryption_dict, self.trailer.get("ID"))
         else:
             self._security_handler = None
@@ -423,7 +400,7 @@ class Parser:
     
 
     @lru_cache(maxsize=256)
-    def parse_xref_entry(self, xref_entry):
+    def parse_reference(self, xref_entry):
         """
         Parse and retrieve the PDF object `xref_entry` points to.
 
@@ -446,7 +423,7 @@ class Parser:
             Each PDF object that can be referred to using the XRefTable or a PDFReference is 
             wrapped into a container called IndirectObject. 
         """
-        logging.debug("parse_xref_entry with input: " + str(xref_entry))
+        logging.debug("parse_reference with input: " + str(xref_entry))
         if isinstance(xref_entry, PDFReference):
             logging.debug("It is a PDFReference")
             xref_entry = self.xreftable[xref_entry]
@@ -463,7 +440,7 @@ class Parser:
         elif isinstance(xref_entry, XrefCompressedEntry):
             # now parse the object stream containing the object the entry refers to
             logging.debug("It is a Xref Compressed Entry.")
-            stream_token = self.parse_xref_entry(PDFReference(xref_entry.objstm_number, 0))
+            stream_token = self.parse_reference(PDFReference(xref_entry.objstm_number, 0))
             logging.debug("Stream token: " + str(stream_token))
             D, stream_reader = stream_token.value
             stream = stream_reader()
@@ -681,7 +658,7 @@ class Parser:
                 logging.warning("Reference to non-existing object.")
                 # TODO: now what?
                 self._basic_parser._raise_syntax_error("Missing stream 'Length' property.")
-            length = self.parse_xref_entry(xrefentity).value
+            length = self.parse_reference(xrefentity).value
 
         if not isinstance(length, int):
             self._basic_parser._raise_syntax_error("The object referenced by 'Length' is not an integer.")

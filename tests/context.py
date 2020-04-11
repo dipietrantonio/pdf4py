@@ -35,7 +35,7 @@ logging.basicConfig(level=logging.INFO)
 
 import pdf4py._lexer as lexpkg
 import pdf4py.parser as parpkg
-import pdf4py.document as docpkg
+import pdf4py._document as docpkg
 import pdf4py._security.rc4 as rc4pkg
 from pdf4py._security.aes import *
 from pdf4py._decoders import tiff_predictor

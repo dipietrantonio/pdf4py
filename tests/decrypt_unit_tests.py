@@ -49,11 +49,11 @@ class DecryptFunctionsTestCase(unittest.TestCase):
     def test_decrypt_empty_password(self):
         fp = open(os.path.join(PDFS_FOLDER, "0009.pdf"), "rb")
         parser = parpkg.Parser(fp)
-        encryption_dict = parser.parse_xref_entry(parser.trailer["Encrypt"]).value
+        encryption_dict = parser.parse_reference(parser.trailer["Encrypt"]).value
         id_array = [unhexlify(x.value) if isinstance(x, parpkg.PDFHexString) else x.value for x in parser.trailer["ID"]]
         value = authenticate_user_password(b"", encryption_dict, id_array)
         self.assertTrue(value is not None)
-        s = parser.parse_xref_entry(parpkg.PDFReference(48, 0)).value["URI"].value
+        s = parser.parse_reference(parpkg.PDFReference(48, 0)).value["URI"].value
         self.assertEqual(s, b'http://www.education.gov.yk.ca/')
         fp.close()
 
@@ -63,7 +63,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0017.pdf"), "rb")
         parser = parpkg.Parser(fp, b'foo')
         for x in parser.xreftable:
-            parser.parse_xref_entry(x)
+            parser.parse_reference(x)
         fp.close()
 
 
@@ -71,7 +71,7 @@ class DecryptFunctionsTestCase(unittest.TestCase):
     def test_decrypt_aes_256(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0021.pdf"), "rb")
         parser = parpkg.Parser(fp, 'foo')
-        producer = parser.parse_xref_entry(parser.xreftable[10, 0]).value['Producer'].value.decode('utf16')
+        producer = parser.parse_reference(parser.xreftable[10, 0]).value['Producer'].value.decode('utf16')
         self.assertIn('LibreOffice', producer)
         fp.close()
 

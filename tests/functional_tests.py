@@ -31,7 +31,7 @@ def parse_file(filename):
     with open(filename, "rb") as fp:
         parser = parpkg.Parser(fp)
         for pdfXrefEntry in parser.xreftable:
-            x = parser.parse_xref_entry(pdfXrefEntry)
+            x = parser.parse_reference(pdfXrefEntry)
             if isinstance(x, parpkg.PDFIndirectObject):
                 x = x.value
             if isinstance(x, parpkg.PDFStream):
@@ -77,9 +77,9 @@ class ParseEncryptedPDFTestCase(unittest.TestCase):
         self.assertIn("Encrypt", parser.trailer)
         enc_dict = parser.trailer["Encrypt"]
         if isinstance(enc_dict, parpkg.PDFReference):
-            enc_dict = parser.parse_xref_entry(enc_dict).value
+            enc_dict = parser.parse_reference(enc_dict).value
         self.assertIsInstance(enc_dict, dict)
-        doc_info = parser.parse_xref_entry(parser.xreftable[(6, 0)]).value
+        doc_info = parser.parse_reference(parser.xreftable[(6, 0)]).value
         self.assertIsInstance(doc_info, dict)
         self.assertIn(b'Acrobat', doc_info["Creator"].value)
         fp.close()

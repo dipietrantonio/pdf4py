@@ -1,3 +1,5 @@
+.. _parser_module:
+
 parser module
 ==============
 
