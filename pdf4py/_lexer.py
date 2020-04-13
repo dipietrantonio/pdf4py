@@ -375,7 +375,7 @@ class Lexer:
         if self.__head != CLOSE_ANGLE_BRACKET:
             self.__raise_lexer_error("Expected '>' to end hexadecimal string.")
         self.__advance()
-        return PDFHexString(buffer)
+        return PDFHexString(bytes(buffer))
 
             
     def __extract_name_or_operator(self):

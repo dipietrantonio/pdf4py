@@ -9,7 +9,7 @@ user the ability to locate PDF objects within the file and parse them into suita
 Quick example
 -------------
 
-Here is a quick demostration on how to use pdf4py. For more examples, look at the tutorial page.
+Here is a quick demostration on how to use pdf4py. For more examples, look at the :ref:`tutorials` page.
 
 ::
 
@@ -59,3 +59,4 @@ Table of Contents
     tutorials
     modules/index
     standard_coverage
+    release_notes

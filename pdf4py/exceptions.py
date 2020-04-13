@@ -23,5 +23,5 @@ class PDFWrongPasswordError(Exception):
 
 class PDFGenericError(Exception):
     """
-    Raised when a generic erro
+    Raised when a generic error happens.
     """

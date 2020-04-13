@@ -221,16 +221,18 @@ def decrypt(encryption_key: 'bytes', encryption_dict : 'dict', data : 'bytes', i
 class StandardSecurityHandler:
 
 
-    def __init__(self, password : 'bytes', encryption_dict : 'dict', id_array : 'list'):
+    def __init__(self, password : 'bytes or str', encryption_dict : 'dict', id_array : 'list'):
         self.__encryption_dict = encryption_dict
         self.__V = self.__encryption_dict['V']
         if self.__V not in list(range(6)):
             raise PDFGenericError("The 'V' entry in the Encrypt dictionary is given an illegal value: '{}'".format(self.__V))
         if self.__V == 5:
+            password = str() if password is None else password
             if not isinstance(password, str):
                 raise PDFGenericError('The password must be a str object.')
             self.__encryption_key = compute_encryption_key_AESV3(password, encryption_dict)
         else:
+            password = bytes() if password is None else password
             self.__id_array = [unhexlify(x.value) if isinstance(x, PDFHexString) else x.value for x in id_array]
             self.__encryption_key = authenticate_user_password(password, encryption_dict, self.__id_array)
             if self.__encryption_key is None:

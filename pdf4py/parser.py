@@ -348,7 +348,8 @@ class Parser:
     The constructor takes as argument an object `source`, the sequence of bytes the PDF document 
     is encoded into. It can be of type `bytes`, `bytearray` or file pointer opened for reading
     in binary mode. Optionally, the second argument is the password to be provided if the document
-    is protected through encryption. For example,
+    is protected through encryption (if encrypted with AESV3, the password is of type `str`, else `bytes`).
+    For example,
 
     ::
 
@@ -370,7 +371,7 @@ class Parser:
     TRAILER_FIELDS = {"Root", "ID", "Size", "Encrypt", "Info", "Prev"}
 
 
-    def __init__(self, source, password = b""):
+    def __init__(self, source, password = None):
         self._basic_parser = SequentialParser(source, stream_reader = self._stream_reader, content_stream_mode = False)
         self._read_header()
         self.__parse_xref_table()
