@@ -1,5 +1,7 @@
 # pdf4py
 
+[![Build Status](https://travis-ci.org/Halolegend94/pdf4py.svg?branch=master)](https://travis-ci.org/Halolegend94/pdf4py) [![Documentation Status](https://readthedocs.org/projects/pdf4py/badge/?version=latest)](https://pdf4py.readthedocs.io/en/latest/?badge=latest)
+
 A PDF parser written in Python 3 with no external dependencies.
 
 The package pdf4py allows the user to interact with a PDF file at a low level and to build higher level functionalities (e.g. text and/or image extraction). In particular, it defines the class Parser that reads the Cross Reference Table of a PDF document and uses its entries to give the user the ability to locate PDF objects within the file and parse them into suitable Python objects.
@@ -45,10 +47,9 @@ in the inner workings of one of the most important and ubiquitous file format. A
 a better way to understand the PDF than writing a parser for it?
 
 
-## PDF standard coverage
+## Documentation
 
-You can check how many features of the standard are implemented and what is the progress on
-supporting the missing ones by checking the standard coverage [page](docs/source/standard_coverage.rst).
+You can read the documentation for this package on [readthedocs.io](https://pdf4py.readthedocs.io/en/latest/).
 
 
 ## Contributing

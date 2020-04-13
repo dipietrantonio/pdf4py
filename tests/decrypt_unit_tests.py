@@ -45,7 +45,7 @@ class RC4TestCase(unittest.TestCase):
 
 class DecryptFunctionsTestCase(unittest.TestCase):
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_decrypt_empty_password(self):
         fp = open(os.path.join(PDFS_FOLDER, "0009.pdf"), "rb")
         parser = parpkg.Parser(fp)
@@ -58,7 +58,6 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp.close()
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_128(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0017.pdf"), "rb")
         parser = parpkg.Parser(fp, b'foo')
@@ -67,7 +66,6 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp.close()
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_256(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0021.pdf"), "rb")
         parser = parpkg.Parser(fp, 'foo')
@@ -76,7 +74,6 @@ class DecryptFunctionsTestCase(unittest.TestCase):
         fp.close()
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_decrypt_aes_256_m(self):
         fp = open(os.path.join(ENCRYPTED_PDFS_FOLDER, "0020.pdf"), "rb")
         with self.assertRaises(PDFGenericError):

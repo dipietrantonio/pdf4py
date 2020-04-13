@@ -31,31 +31,26 @@ from binascii import unhexlify
 class AESTestCase(unittest.TestCase):
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_sub_bytes(self):
         self.assertTrue(sub_bytes([0x3a]) == [0x80])
     
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_shift_rows(self):
         state = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
         expected = [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
         self.assertEqual(expected, shift_rows(state))
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_inv_shift_rows(self):
         expected = [1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
         state = [1, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0]
         self.assertEqual(expected, inv_shift_rows(state))
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_xtime(self):
         self.assertEqual(xtime(xtime(xtime(xtime(0x57)))), 0x07)
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_mix_columns(self):
         input = [
             0xd4, 0xbf, 0x5d, 0x30,
@@ -71,7 +66,6 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(mix_columns(input), expected_output)
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_inv_mix_columns(self):
         expected_output = [
             0xd4, 0xbf, 0x5d, 0x30,
@@ -87,7 +81,6 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(inv_mix_columns(input), expected_output)
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_expasion_key(self):
         ckey =  unhexlify(b"ffffffffffffffffffffffffffffffff")
         expected = unhexlify(
@@ -166,7 +159,7 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(bytes(key_expansion(ckey)), expected)
 
     
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_cipher_and_inv_cipher(self):
         input = unhexlify(b"3243f6a8885a308d313198a2e0370734")
         key = unhexlify(b"2b7e151628aed2a6abf7158809cf4f3c")
@@ -182,7 +175,7 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(decr, input)
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_cbc_encryption(self):
         key = unhexlify(b"2b7e151628aed2a6abf7158809cf4f3c")
         iv = bytes([0] * 16)
@@ -190,7 +183,6 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(message, cbc_decrypt(cbc_encrypt(message, key, iv), key, iv)[:len(message)])
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_cbc_encryption_256_key(self):
         key = bytes(range(32))
         iv = bytes(range(16))

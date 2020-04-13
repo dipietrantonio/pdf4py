@@ -44,24 +44,20 @@ def parse_file(filename):
 class ParseALatexPDFTest(unittest.TestCase):
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_read_header(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             parser = parpkg.Parser(fp)
             self.assertEqual(parser.version, "PDF-1.4")
     
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_simple(self):
         parse_file(os.path.join(PDFS_FOLDER, "0000.pdf"))
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_more_complex_file(self):
         parse_file(os.path.join(PDFS_FOLDER, "0008.pdf"))
 
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_more_complex_file(self):
         parse_file(os.path.join(PDFS_FOLDER, "0009.pdf"))
 
@@ -69,7 +65,7 @@ class ParseALatexPDFTest(unittest.TestCase):
 
 class ParseEncryptedPDFTestCase(unittest.TestCase):
     
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_read(self):
         ENC_FILE = os.path.join(PDFS_FOLDER, "0009.pdf")
         fp = open(ENC_FILE, "rb")
@@ -97,7 +93,7 @@ class ParseAllPDFs(unittest.TestCase):
 
 class DocumentTestCase(unittest.TestCase):
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_print_document_catalog(self):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             myPdfDoc = docpkg.Document(fp)
