@@ -7,7 +7,6 @@ from .aes import cbc_decrypt
 from ..types import PDFHexString, PDFLiteralString, PDFName
 import stringprep
 import unicodedata
-from Crypto.Cipher import AES
 
 PASSWORD_PADDING = b"\x28\xBF\x4E\x5E\x4E\x75\x8A\x41\x64\x00\x4E\x56\xFF\xFA\x01\x08\x2E\x2E\x00\xB6"\
     b"\xD0\x68\x3E\x80\x2F\x0C\xA9\xFE\x64\x53\x69\x7A"
@@ -62,16 +61,14 @@ def compute_encryption_key_AESV3(password : 'str', encryption_dict : 'dict'):
         intermediate = sha256(truncated + O[-8:] + U).digest()
         OE = encryption_dict["OE"]
         OE = OE.value if isinstance(OE, PDFLiteralString) else unhexlify(OE.value)
-        file_encryption_key = AES.new(intermediate, mode=AES.MODE_CBC, IV=b'\x00'*16).decrypt(OE)
-        #file_encryption_key = cbc_decrypt(OE, intermediate, b'\x00'*16, padding = False)
+        file_encryption_key = cbc_decrypt(OE, intermediate, b'\x00'*16, padding = False)
     else:
         digest = sha256(truncated + U[32:32+8]).digest()
         if digest == U[:32]:
             intermediate = sha256(truncated + U[-8:]).digest()
             UE = encryption_dict["UE"]
             UE = UE.value if isinstance(UE, PDFLiteralString) else unhexlify(UE.value)
-            file_encryption_key = AES.new(intermediate, mode=AES.MODE_CBC, IV=b'\x00'*16).decrypt(UE)
-            # file_encryption_key = cbc_decrypt(UE, intermediate, b'\x00'*16, padding = False)
+            file_encryption_key = cbc_decrypt(UE, intermediate, b'\x00'*16, padding = False)
         else:
             raise PDFWrongPasswordError()
     return file_encryption_key
@@ -264,8 +261,7 @@ class StandardSecurityHandler:
                 elif CFM == 'AESV2':
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
                 elif CFM == 'AESV3':
-                    decrypted = AES.new(self.__encryption_key, mode=AES.MODE_CBC, IV=data[:16]).decrypt(data[16:])
-                    return decrypted[:-decrypted[-1]]
+                    return cbc_decrypt(data[16:], self.__encryption_key, data[:16])
                 else:
                     raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
         else:
@@ -301,8 +297,7 @@ class StandardSecurityHandler:
                 elif CFM == 'AESV2':
                     return decrypt(self.__encryption_key, self.__encryption_dict, data, identifier, 'AES')
                 elif CFM == 'AESV3':
-                    decrypted = AES.new(self.__encryption_key, mode=AES.MODE_CBC, IV=data[:16]).decrypt(data[16:])
-                    return decrypted[:-decrypted[-1]]
+                    return cbc_decrypt(data[16:], self.__encryption_key, data[:16])
                 else:
                     raise PDFSyntaxError('Unexpected value for CFM: "{}"'.format(CFM))
 

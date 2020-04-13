@@ -128,9 +128,8 @@ def inv_mix_columns(state):
 
 def key_expansion(key):
     # assure that the length of the key is legal
-    Nk = len(key) / 4
-    assert(Nk in [4.0, 6.0, 8.0])
-    Nk = int(Nk)
+    Nk = len(key) // 4
+    assert(Nk in [4, 6, 8])
     Nk4 = Nk * 4
     Nr = Nk + 6
     temp = [0] * 4
@@ -142,7 +141,7 @@ def key_expansion(key):
         temp = expanded_key[i-4:i]
         if i % (Nk4) == 0:
             temp = xor(sub_bytes(rot_word(temp)), [Rcon[i//(Nk4)], 0x00, 0x00, 0x00])
-        elif Nk > 6 and i % Nk4 == 4:
+        elif Nk > 6 and (i - 16) % Nk4 == 0:
             temp = sub_bytes(temp)
         expanded_key[i:i+4] = xor(expanded_key[i-Nk4:i-Nk4+4], temp)
         i = i + 4

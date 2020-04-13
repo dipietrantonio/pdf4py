@@ -25,7 +25,6 @@ SOFTWARE.
 import unittest
 from .context import *
 from binascii import unhexlify
-from Crypto.Cipher import AES
 
 
 
@@ -107,6 +106,66 @@ class AESTestCase(unittest.TestCase):
         self.assertEqual(bytes(expanded), expected)       
 
 
+    def test_expasion_key_128(self):
+        ckey = unhexlify(b"2b7e151628aed2a6abf7158809cf4f3c")
+        expected = unhexlify(
+            b"2b7e151628aed2a6abf7158809cf4f3c"
+            b"a0fafe1788542cb123a339392a6c7605"
+            b"f2c295f27a96b9435935807a7359f67f"
+            b"3d80477d4716fe3e1e237e446d7a883b"
+            b"ef44a541a8525b7fb671253bdb0bad00"
+            b"d4d1c6f87c839d87caf2b8bc11f915bc"
+            b"6d88a37a110b3efddbf98641ca0093fd"
+            b"4e54f70e5f5fc9f384a64fb24ea6dc4f"
+            b"ead27321b58dbad2312bf5607f8d292f"
+            b"ac7766f319fadc2128d12941575c006e"
+            b"d014f9a8c9ee2589e13f0cc8b6630ca6"
+            )
+        self.assertEqual(bytes(key_expansion(ckey)), expected)
+
+    
+    def test_expasion_key_196(self):
+        ckey =     unhexlify(b"000102030405060708090a0b0c0d0e0f1011121314151617")
+        expected = unhexlify(
+            b"000102030405060708090a0b0c0d0e0f"
+            b"10111213141516175846f2f95c43f4fe"
+            b"544afef55847f0fa4856e2e95c43f4fe"
+            b"40f949b31cbabd4d48f043b810b7b342"
+            b"58e151ab04a2a5557effb5416245080c"
+            b"2ab54bb43a02f8f662e3a95d66410c08"
+            b"f501857297448d7ebdf1c6ca87f33e3c"
+            b"e510976183519b6934157c9ea351f1e0"
+            b"1ea0372a995309167c439e77ff12051e"
+            b"dd7e0e887e2fff68608fc842f9dcc154"
+            b"859f5f237a8d5a3dc0c02952beefd63a"
+            b"de601e7827bcdf2ca223800fd8aeda32"
+            b"a4970a331a78dc09c418c271e3a41d5d"
+        )
+        self.assertEqual(bytes(key_expansion(ckey)), expected)
+
+
+    def test_expasion_key_256(self):
+        ckey =     unhexlify(b"000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+        expected = unhexlify(
+            b"000102030405060708090a0b0c0d0e0f"
+            b"101112131415161718191a1b1c1d1e1f"
+            b"a573c29fa176c498a97fce93a572c09c"
+            b"1651a8cd0244beda1a5da4c10640bade"
+            b"ae87dff00ff11b68a68ed5fb03fc1567"
+            b"6de1f1486fa54f9275f8eb5373b8518d"
+            b"c656827fc9a799176f294cec6cd5598b"
+            b"3de23a75524775e727bf9eb45407cf39"
+            b"0bdc905fc27b0948ad5245a4c1871c2f"
+            b"45f5a66017b2d387300d4d33640a820a"
+            b"7ccff71cbeb4fe5413e6bbf0d261a7df"
+            b"f01afafee7a82979d7a5644ab3afe640"
+            b"2541fe719bf500258813bbd55a721c0a"
+            b"4e5a6699a9f24fe07e572baacdf8cdea"
+            b"24fc79ccbf0979e9371ac23c6d68de36"
+        )
+        self.assertEqual(bytes(key_expansion(ckey)), expected)
+
+    
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_cipher_and_inv_cipher(self):
         input = unhexlify(b"3243f6a8885a308d313198a2e0370734")
@@ -138,9 +197,8 @@ class AESTestCase(unittest.TestCase):
         from binascii import hexlify
         message = bytes(i  % 256 for i in range(64))
         # Not working
-        # cypher = cbc_encrypt(message, key, iv, padding = False)
-        cypher = AES.new(key, mode=AES.MODE_CBC, IV=iv).encrypt(message)
-        decry = AES.new(key, mode=AES.MODE_CBC, IV=iv).decrypt(cypher)
+        cypher = cbc_encrypt(message, key, iv, padding = False)
+        decry = cbc_decrypt(cypher, key, iv, padding = False)
         self.assertEqual(message, decry)
 
 
