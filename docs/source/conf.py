@@ -22,7 +22,7 @@ copyright = '2020, Cristian Di Pietrantonio'
 author = 'Cristian Di Pietrantonio'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.0'
+release = '0.0.2'
 
 
 # -- General configuration ---------------------------------------------------

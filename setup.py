@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pdf4py",
-    version="0.0.1",
+    version="0.0.2",
     author="Cristian Di Pietrantonio",
     author_email="cristiandipietrantonio@gmail.com",
     description="A PDF parser written in Python3 with no external dependencies.",
