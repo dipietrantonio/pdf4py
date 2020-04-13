@@ -26,6 +26,14 @@ PDFReference(object_number=114, generation_number=0)
 PaperCept Conference Management System
 ```
 
+## Installation
+
+You can install `pdf4py` using pip:
+
+```
+python3 -m pip install pdf4py
+```
+
 ## Extracting text or images
 
 Extracting text from a PDF and other higher level analysis tasks are not natively supported because
