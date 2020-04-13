@@ -50,7 +50,7 @@ Therefore, they require a separate implementation built on top of `pdf4py`.
 
 One day at work I was asked to analyze some PDF files; to my surprise I have discovered that
 there is not an established Python module to easily parse a PDF document. In order to understand
-why I delved into the PDF 1.7 specification: since from moment on, I got more and more interested
+why I delved into the PDF 1.7 specification: since that moment I've got interested more and more
 in the inner workings of one of the most important and ubiquitous file format. And what's
 a better way to understand the PDF than writing a parser for it?
 

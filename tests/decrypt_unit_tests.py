@@ -31,7 +31,7 @@ from binascii import unhexlify
 
 class RC4TestCase(unittest.TestCase):
 
-    @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
+
     def test_rc4_encrypt(self):
         plain = b"Hello world!"
         expected_ciphertext = b"\x48\x9d\x12\x0b\x4b\x13\x62\xf3\x0d\x5b\x46\x97"

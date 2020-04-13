@@ -84,7 +84,6 @@ class ParseEncryptedPDFTestCase(unittest.TestCase):
 
 class ParseAllPDFs(unittest.TestCase):
 
-    @unittest.skip('takes too long')
     @unittest.skipUnless(RUN_ALL_TESTS, "debug_purposes")
     def test_all_pdfs(self):
         for pdfPath in os.listdir(PDFS_FOLDER):
