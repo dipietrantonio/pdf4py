@@ -7,9 +7,9 @@ from ._charset import BLANKS
 decoders = {}
 
 
-def register(filterName):
+def register(filter_name):
     def wrapper(func):
-        decoders[filterName] = func
+        decoders[filter_name] = func
         return func
     return wrapper
 

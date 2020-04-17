@@ -14,7 +14,7 @@ class XRefTable:
     
     The Cross Reference Table (XRefTable) is the index of all the PDF objects in a PDF file. An object
     is uniquely identified with a tuple `(s, g)` where `s` is the sequence number and `g` is the
-    generation number. Then a  XRefTable   There are mainly two types of entries in such table:
+    generation number. There are mainly two types of entries in such table:
 
     - `XrefInUseEntry` entries that represent objects that are part of the PDF document's current 
       structure, and
@@ -54,7 +54,7 @@ class XRefTable:
     def __getitem__(self, key : 'tuple'):
         """
         Returns a cross-reference table entry corresponding to the sequence and generation numbers
-        fiven as input.
+        given as input.
 
         Parameters
         ----------
@@ -64,8 +64,13 @@ class XRefTable:
         
         Returns
         -------
-        - `XrefInUseEntry`, `XrefCompressedEntry` if an in use entry is found,
-        - `None` if the required object has been freed.
+        
+        entry : `XrefInUseEntry` or `XrefCompressedEntry`
+            If an in use entry is found,
+        or
+
+        None : NoneType
+            if the required object has been freed.
 
         Raises
         ------
@@ -87,7 +92,10 @@ class XRefTable:
     
     def __iter__(self):
         """
-        Returns a generator over the in use entries.
+        Returns
+        -------
+        gen : generator
+            a generator over the in use entries.
         """ 
         def gen():
             if self.previous is not None:
@@ -206,7 +214,8 @@ class SequentialParser:
         
         Returns
         -------
-        obj : one of the PDF types in modules `types`.
+        obj : one of the PDF types defined in module `types`
+            The parsed PDF object.
         """
         if self.__ended:
             raise StopIteration()
@@ -220,7 +229,7 @@ class SequentialParser:
                     break
                 L.append(self.parse_object(obj_num))
             # we have successfully parsed a list
-            # remove CLOSE_SQUARE_BRAKET token stream from stream
+            # remove CLOSE_SQUARE_BRACKET token stream from stream
             try:
                 next(self._lexer)
             except StopIteration:
@@ -386,6 +395,9 @@ class Parser:
 
 
     def _read_header(self):
+        """
+        Reads the PDF header to retrive the standard used.
+        """
         logging.debug("Reading the header..")
         self._basic_parser._lexer.source.seek(0, 0)
         buff = bytearray()
@@ -397,7 +409,7 @@ class Parser:
             self.version = buff.decode()[1:]
         except UnicodeDecodeError:
             self.version = buff.decode("utf8")
-        logging.debug("_reading_header finished.")
+        logging.debug("_read_header finished.")
     
 
     @lru_cache(maxsize=256)
@@ -405,8 +417,8 @@ class Parser:
         """
         Parse and retrieve the PDF object `xref_entry` points to.
 
-        Description
-        -----------
+        Notes
+        -----
         PDF objects are not parsed when an instance of `Parser` is being created. Instead,
         parsing occurs when this method is called. To avoid that the same object is being
         parsed too many times, a LRU cache is being used to keep in memory the last 256
@@ -487,12 +499,12 @@ class Parser:
                 xrefs.insert(0, xref_data)
                 # Check now if this is a PDF in compatibility mode where there is xref stream
                 # reference in the trailer.          
-                xrefstmPos = trailer.get("XRefStm")
-                if xrefstmPos is not None:
+                xrefstm_pos = trailer.get("XRefStm")
+                if xrefstm_pos is not None:
                     logging.debug("Found a xref stream reference in trailer of xref table..")
-                    self._basic_parser._lexer.move_at_position(xrefstmPos)
-                    _, xrefDataStream = self.__parse_xref_stream()
-                    xrefs.insert(0, xrefDataStream)
+                    self._basic_parser._lexer.move_at_position(xrefstm_pos)
+                    _, xref_data_stream = self.__parse_xref_stream()
+                    xrefs.insert(0, xref_data_stream)
             else:
                 # it can only be a xref stream
                 logging.debug("Parsing an xref stream..")
@@ -519,10 +531,10 @@ class Parser:
         stream instead of in a cross-reference table. Cross-reference streams provide the 
         following advantages:
         
-            - A more compact representation of cross-reference information,
-            - The ability to access compressed objects that are stored in object streams 
-              (see 7.5.7, "Object Streams") and to allow new cross-reference entry types to be added
-              in the future
+        - A more compact representation of cross-reference information,
+        - The ability to access compressed objects that are stored in object streams 
+            (see 7.5.7, "Object Streams") and to allow new cross-reference entry types to be added
+            in the future
         """
         logging.debug("Parsing a xref stream..")
         o = self._basic_parser.parse_object()

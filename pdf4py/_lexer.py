@@ -114,7 +114,10 @@ class Lexer:
     @property
     def current_lexeme(self):
         """
-        Returns the last parsed lexeme.
+        Returns
+        -------
+        lex : a Python object
+            The last parsed lexeme.
         """
         return self.__current_lexeme
     
@@ -132,7 +135,8 @@ class Lexer:
 
         Returns
         -------
-        The starting position of the sequence if found, `-1` otherwise.
+        pos : int
+            The starting position of the sequence if found, `-1` otherwise.
         """
         revKeyword = bytes(reversed(keyword))
         buff = bytearray()
@@ -162,8 +166,8 @@ class Lexer:
         """
         Returns the bytes near the Lexer's current head position.
 
-        Description
-        -----------
+        Notes
+        -----
         Given a context size of `C` bytes, and the current head position `P`, the function returns the 
         bytes sequence starting from the byte at position `max(P - C // 2, 0)` whose length is at most
         `C`.
@@ -171,9 +175,15 @@ class Lexer:
 
         Returns
         -------
-        A bytes sequence representing the content around the Lexer's head position.
+        context : bytes
+            A bytes sequence representing the content around the Lexer's head position.
+
+        errorPosition : int
+            Position in the input stream where the error occurred.
+        
+        errorRelativePosition : int
+            Position in the context sequence where the error occurred.
         """
-        # collect the context in which the error occurred
         # collect the context in which the error occurred
         errorPosition = self.__source.tell()
         contextSideSize = self.__contextSize // 2
@@ -195,20 +205,18 @@ class Lexer:
     def __raise_lexer_error(self, msg):
         """
         Called when a lexical error is encountered during the input tokenization, for example when an
-        unrecognised character is found.
+        unrecognized character is found.
 
-        Description:
-        ------------
         This function collects also the input sequence around the position where the error happened, 
         enriching the original error message given as input, so that the exception carries a more 
         informative error message for the user.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         msg : str
             A description of the lexical error.
         
-        Raise:
+        Raises
         ------
         PDFLexicalError
         """
@@ -226,15 +234,16 @@ class Lexer:
         restored in future.
 
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         pos : int
             The position where to move to.
         
 
-        Returns:
-        --------
-        The lexeme extracted starting from position `pos`.
+        Returns
+        -------
+        lex : A Python object
+            The lexeme extracted starting from position `pos`.
         """
         previousLexeme = self.current_lexeme
         previousPosition = self.__source.tell()
@@ -259,7 +268,12 @@ class Lexer:
 
     def __advance(self, k = 1):
         """
-        Avance the Lexer's head of k positions.
+        Advance the Lexer's head of `k` positions.
+
+        Parameters
+        ----------
+        k : int
+            Number of position the Lexer's head must be moved.
         """
         if self.__ended:
             raise StopIteration()
@@ -289,7 +303,7 @@ class Lexer:
 
     def __peek(self, k = 1):
         """
-        Takes a look at the byte at position currentPos + k without modifying the Lexer's head
+        Takes a look at the byte at position `currentPos + k` without modifying the Lexer's head
         position.
 
 
@@ -301,7 +315,8 @@ class Lexer:
 
         Returns
         -------
-        The peeked byte
+        current_byte : int
+            The peeked byte
         """
         k -= 1
         currentPos = self.__source.tell()
@@ -320,7 +335,9 @@ class Lexer:
 
         Returns
         -------
-        True if successful, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         self.__advance()
         openParentheses = 1
@@ -355,12 +372,14 @@ class Lexer:
 
     def __extract_hexadecimal_string(self):
         """
-        Extracts a hexadecimal digits sequence fron the input bytes sequence.
+        Extracts a hexadecimal digits sequence from the input bytes sequence.
 
 
         Returns
         -------
-        True if successful, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         self.__advance()
         buffer = bytearray()
@@ -385,7 +404,9 @@ class Lexer:
 
         Returns
         -------
-        True if successful, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         buffer = bytearray()
         while ord('!') <= self.__head and self.__head <= ord('~') and self.__head not in DELIMITERS:
@@ -412,7 +433,9 @@ class Lexer:
 
         Returns
         -------
-        True if successful, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         buff = bytearray()
         if self.__head == PLUS or self.__head == MINUS:
@@ -455,7 +478,9 @@ class Lexer:
 
         Returns
         -------
-        True if successful, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         diff = False
         for i, l in enumerate(lit):
@@ -478,7 +503,9 @@ class Lexer:
 
         Returns
         -------
-        True if a keyword was extracted, False otherwise.
+        successful : bool
+            `successful` is set to `True` if the method executes without
+            errors, `False` otherwise.
         """
         for k in KEYWORDS:
             if self.__extract_literal(k):
@@ -536,9 +563,6 @@ class Lexer:
         Returns the next lexeme in the input bytes sequence. Also, set current_lexeme property 
         to the parsed lexeme.
 
-
-        Description
-        -----------
         The Lexical Analyzer is an iterator over the sequence of lexemes present in the input
         bytes sequence. For this reason the user can use the built-in `next` function to get
         the next lexeme in the sequence. StopIteration is raised when the end of the bytes 
@@ -547,13 +571,12 @@ class Lexer:
 
         Returns
         -------
-        An object that can be instance of: str, int, float, bool, function, PDFName, PDFKeyword,
-        PDFHexString, PDFSingleton.
-
+        lex : str, int, float, bool, function, PDFName, PDFKeyword, PDFHexString, PDFSingleton.
+            The next lexeme from the byte sequence.
 
         Raises
         ------
-        StopIteration on End-Of-Sequence, PDFLexicalError when an unexpected input byte is
+        `StopIteration` on End-Of-Sequence, `PDFLexicalError` when an unexpected input byte is
         encountered.
         """
 
@@ -623,9 +646,6 @@ class Lexer:
         """
         Reverts the Lexer's head position the one before the last call to __next__.
 
-
-        Description
-        -----------
         Sometimes it is useful for the Lexer user to undo the calls to __next__ because it
         may not be able to handle the particular extracted lexeme sequence (which maybe has
         to be handled by another actor). While parsing a PDF, this may happen when 2 integers

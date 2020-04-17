@@ -14,8 +14,7 @@ Suppose we want to know how many PDF (in use) objects are in a PDF file. Let's
 use the following snippet to find it out.
 
 ::
-
-    >>> parser = pdf4py.parser.Parser(fp)
+    >>> import pdf4py.parser
     >>> fp = open('tests/pdfs/0000.pdf', 'rb')
     >>> parser = pdf4py.parser.Parser(fp)
     >>> all_xref_entries = list(parser.xreftable)

@@ -1,3 +1,7 @@
+"""
+Here are defined constants and functions to deal with the input byte stream
+and to support the identification of meaningful class of characters in it.
+"""
 # Defines a constant for each relevant character
 LINE_FEED = ord('\n')
 HORIZONTAL_TAB = ord('\t')
@@ -13,7 +17,7 @@ CLOSE_SQUARE_BRACKET = ord(']')
 FORWARD_SLASH = ord('/')
 BACK_SLASH = ord("\\")
 OPEN_CURLY_BRACKET = ord('{')
-CLOSE_CURLY_BRAKET = ord('}')
+CLOSE_CURLY_BRACKET = ord('}')
 PERCENTAGE = ord('%')
 POINT = ord('.')
 PLUS = ord('+')
@@ -27,11 +31,11 @@ NUMBER_SIGN = ord('#')
 
 # singletons are lexemes composed by only one character.
 SINGLETONS = {
-    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET
+    OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET
 }
 
 # used to determine if a character is a regular character
-DELIMITERS = {OPEN_CURLY_BRACKET, CLOSE_CURLY_BRAKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, 
+DELIMITERS = {OPEN_CURLY_BRACKET, CLOSE_CURLY_BRACKET, OPEN_SQUARE_BRACKET, CLOSE_SQUARE_BRACKET, 
     OPEN_PARENTHESIS, CLOSE_PARENTHESIS, FORWARD_SLASH, ord('<'), ord('>'), PERCENTAGE}
 
 # the order is important here! For example, you don't want "n" to comes before "null", otherwise the
