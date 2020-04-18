@@ -387,7 +387,7 @@ class Parser:
         encryption_dict = self.trailer.get("Encrypt")
         if encryption_dict is not None:
             if isinstance(encryption_dict, PDFReference):
-                encryption_dict = self.parse_reference(encryption_dict).value
+                encryption_dict = self.parse_reference(encryption_dict)
             self._security_handler = StandardSecurityHandler(password, encryption_dict, self.trailer.get("ID"))
         else:
             self._security_handler = None
@@ -413,7 +413,7 @@ class Parser:
     
 
     @lru_cache(maxsize=256)
-    def parse_reference(self, xref_entry):
+    def parse_reference(self, reference):
         """
         Parse and retrieve the PDF object `xref_entry` points to.
 
@@ -426,36 +426,39 @@ class Parser:
 
         Parameters
         ----------
-        xref_entry : XrefInUseEntry or XrefCompressedEntry or PDFReference
+        reference : XrefInUseEntry or XrefCompressedEntry or PDFReference
             An entry in the XRefTable or a PDFReference object pointing to a PDFObject within
             the file that has to be parsed.
 
         Returns
         -------
-        ind_obj : PDFIndirectObject
-            Each PDF object that can be referred to using the XRefTable or a PDFReference is 
-            wrapped into a container called IndirectObject. 
-        """
-        logging.debug("parse_reference with input: " + str(xref_entry))
-        if isinstance(xref_entry, PDFReference):
-            logging.debug("It is a PDFReference")
-            xref_entry = self.xreftable[xref_entry]
+        obj : one of the types used to represent a PDF object.
+            The parsed PDF object.
         
-        if isinstance(xref_entry, XrefInUseEntry):
+        Raises
+        ------
+        `ValueError` if `reference` object type is not a valid one.
+        """
+        logging.debug("parse_reference with input: " + str(reference))
+        if isinstance(reference, PDFReference):
+            logging.debug("It is a PDFReference")
+            reference = self.xreftable[reference]
+        
+        if isinstance(reference, XrefInUseEntry):
             logging.debug("it is an XrefInUSeEntry")
-            self.__current_obj_num = (xref_entry.object_number, xref_entry.generation_number)
-            self._basic_parser._lexer.move_at_position(xref_entry.offset)
-            parsedObject = self._basic_parser.parse_object(self.__current_obj_num)
+            self.__current_obj_num = (reference.object_number, reference.generation_number)
+            self._basic_parser._lexer.move_at_position(reference.offset)
+            parsedObject = self._basic_parser.parse_object(self.__current_obj_num).value
             self._basic_parser._lexer.move_back()
             logging.debug("pasing the XrefInUseEntry finished.")
             return parsedObject
         
-        elif isinstance(xref_entry, XrefCompressedEntry):
+        elif isinstance(reference, XrefCompressedEntry):
             # now parse the object stream containing the object the entry refers to
             logging.debug("It is a Xref Compressed Entry.")
-            stream_token = self.parse_reference(PDFReference(xref_entry.objstm_number, 0))
+            stream_token = self.parse_reference(PDFReference(reference.objstm_number, 0))
             logging.debug("Stream token: " + str(stream_token))
-            D, stream_reader = stream_token.value
+            D, stream_reader = stream_token
             stream = stream_reader()
             logging.debug("Stream got: " + str(stream))
             prev_basic_parser = self._basic_parser
@@ -466,7 +469,7 @@ class Parser:
                 n2 = self._basic_parser.parse_object()
                 if not(isinstance(n1, int) and isinstance(n2, int)):
                     self._basic_parser._raise_syntax_error("Expected integers in object stream.")
-                if n1 == xref_entry.object_number:
+                if n1 == reference.object_number:
                     offset = D["First"] + n2
                     self._basic_parser._lexer.move_at_position(offset)
                     obj = self._basic_parser.parse_object(self.__current_obj_num)
@@ -671,7 +674,7 @@ class Parser:
                 logging.warning("Reference to non-existing object.")
                 # TODO: now what?
                 self._basic_parser._raise_syntax_error("Missing stream 'Length' property.")
-            length = self.parse_reference(xrefentity).value
+            length = self.parse_reference(xrefentity)
 
         if not isinstance(length, int):
             self._basic_parser._raise_syntax_error("The object referenced by 'Length' is not an integer.")

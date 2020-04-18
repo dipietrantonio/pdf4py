@@ -1,6 +1,6 @@
 # pdf4py
 
-[![Build Status](https://travis-ci.org/Halolegend94/pdf4py.svg?branch=master)](https://travis-ci.org/Halolegend94/pdf4py) [![Documentation Status](https://readthedocs.org/projects/pdf4py/badge/?version=latest)](https://pdf4py.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/pdf4py.svg)](https://badge.fury.io/py/pdf4py)
+[![Build Status](https://travis-ci.org/Halolegend94/pdf4py.svg?branch=master)](https://travis-ci.org/Halolegend94/pdf4py) [![Documentation Status](https://readthedocs.org/projects/pdf4py/badge/?version=latest)](https://pdf4py.readthedocs.io/en/latest/?badge=latest) [![PyPI version](https://badge.fury.io/py/pdf4py.svg)](https://badge.fury.io/py/pdf4py) ![PyPI - Downloads](https://img.shields.io/pypi/dm/pdf4py?color=brightgreen)
 
 A PDF parser written in Python 3 with no external dependencies.
 
@@ -10,6 +10,11 @@ simple API that can be used to build higher level functionalities (e.g. text and
 extraction). In particular, it defines the class `Parser` that reads the *Cross Reference Table*
 of a PDF document and uses its entries to give the user the ability to locate PDF objects within
 the file and parse them into suitable Python objects.
+
+**DISCLAIMER**: this package hasn't reached a stable version (>= 1.0.0) yet. Although the parser
+API is quite simple it may change suddenly from one release to anther. All breaking changes will
+be properly notified in the release notes.
+
 
 ## Quick example
 
@@ -22,7 +27,7 @@ Here is a quick demonstration on how to use pdf4py. You can find more at the [tu
 >>> info_ref = parser.trailer['Info']
 >>> print(info_ref)
 PDFReference(object_number=114, generation_number=0)
->>> info = parser.parse_reference(info_ref).value
+>>> info = parser.parse_reference(info_ref)
 >>> print(info)
 {'Creator': PDFLiteralString(value=b'PaperCept Conference Management System'),
     ... , 'Producer': PDFLiteralString(value=b'PDFlib+PDI 7.0.3 (Perl 5.8.0/Linux)')}
@@ -31,7 +36,7 @@ PDFReference(object_number=114, generation_number=0)
 PaperCept Conference Management System
 ```
 
-## Installation
+## Installation and updates
 
 You can install `pdf4py` using pip:
 
@@ -41,6 +46,9 @@ python3 -m pip install pdf4py
 
 or download one of the releases and use the `setup.py` script.
 
+The `master` branch is used for development and it is not advised to use it in production.
+
+For this package the semantic versioning (specification 2.0.0) is adopted.
 
 ## Extracting text or images
 
@@ -53,7 +61,7 @@ investing into developing a complete and reliable parser;
 document as a sequence of paragraphs, images, and other objects that can be normally considered *content*.
 
 Therefore, they require a separate implementation built on top of `pdf4py`. In don't exclude that in
-the future these functionalities will be made available as modules in this package, but I am not planning
+future these functionalities will be made available as modules in this package, but I am not planning
 to do it anytime soon.
 
 

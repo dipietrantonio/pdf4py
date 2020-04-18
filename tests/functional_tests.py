@@ -1,20 +1,44 @@
 from .context import *
 import unittest
 import logging
+from binascii import unhexlify
+
+KEYWORDS_OF_INTEREST = ['Extends', 'F']
+
+def parse_object(parser, obj, visited):
+    if isinstance(obj, parpkg.PDFStream):
+        obj.stream()
+        parse_object(parser, obj.dictionary, visited)
+    elif isinstance(obj, parpkg.PDFHexString):
+        unhexlify(obj.value)
+    elif isinstance(obj, list):
+        for x in obj:
+            parse_object(parser, x, visited)
+    elif isinstance(obj, dict):
+        interesting_keys = set(obj.keys()).intersection(KEYWORDS_OF_INTEREST)
+        if len(interesting_keys) > 0:
+            raise Exception('Found keyword(s) {} in dictionary {}'.format(interesting_keys, obj))
+        for k in obj:
+            parse_object(parser, obj[k], visited)
+    elif isinstance(obj, parpkg.PDFReference) and obj not in visited:
+        visited.add(obj)
+        x = parser.parse_reference(obj)
+        if isinstance(x, parpkg.PDFIndirectObject):
+            x = x.value
+        parse_object(parser, x, visited)
+
 
 
 def parse_file(filename):
+    visited_references = set()
     with open(filename, "rb") as fp:
         parser = parpkg.Parser(fp)
         for pdfXrefEntry in parser.xreftable:
             x = parser.parse_reference(pdfXrefEntry)
             if isinstance(x, parpkg.PDFIndirectObject):
                 x = x.value
-            if isinstance(x, parpkg.PDFStream):
-                try:
-                    x.stream()
-                except Exception:
-                    raise
+            parse_object(parser, x, visited_references)
+        
 
 
 class ParseALatexPDFTest(unittest.TestCase):
@@ -34,7 +58,7 @@ class ParseALatexPDFTest(unittest.TestCase):
         parse_file(os.path.join(PDFS_FOLDER, "0008.pdf"))
 
 
-    def test_more_complex_file(self):
+    def test_more_complex_file_2(self):
         parse_file(os.path.join(PDFS_FOLDER, "0009.pdf"))
 
 
@@ -49,9 +73,9 @@ class ParseEncryptedPDFTestCase(unittest.TestCase):
         self.assertIn("Encrypt", parser.trailer)
         enc_dict = parser.trailer["Encrypt"]
         if isinstance(enc_dict, parpkg.PDFReference):
-            enc_dict = parser.parse_reference(enc_dict).value
+            enc_dict = parser.parse_reference(enc_dict)
         self.assertIsInstance(enc_dict, dict)
-        doc_info = parser.parse_reference(parser.xreftable[(6, 0)]).value
+        doc_info = parser.parse_reference(parser.xreftable[(6, 0)])
         self.assertIsInstance(doc_info, dict)
         self.assertIn(b'Acrobat', doc_info["Creator"].value)
         fp.close()
@@ -66,6 +90,7 @@ class ParseAllPDFs(unittest.TestCase):
             parse_file(os.path.join(PDFS_FOLDER, pdfPath))
 
 
+
 class DocumentTestCase(unittest.TestCase):
 
 
@@ -73,6 +98,7 @@ class DocumentTestCase(unittest.TestCase):
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
             myPdfDoc = docpkg.Document(fp)
             self.assertEqual(len(myPdfDoc.pages), 10)
+
 
 if __name__ == "__main__":
     unittest.main()

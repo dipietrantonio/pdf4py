@@ -14,6 +14,7 @@ Suppose we want to know how many PDF (in use) objects are in a PDF file. Let's
 use the following snippet to find it out.
 
 ::
+
     >>> import pdf4py.parser
     >>> fp = open('tests/pdfs/0000.pdf', 'rb')
     >>> parser = pdf4py.parser.Parser(fp)
@@ -58,17 +59,14 @@ defines a particular page.
     >>> root_ref = parser.trailer['Root']
     >>> root_dict = parser.parse_reference(root_ref)
     >>> root_dict
-    PDFIndirectObject(object_number=119, generation_number=0, value={'Type': PDFName(value='Catalog'), 'Pages': PDFReference(object_number=2, generation_number=0)})
-    >>> root_dict = root_dict.value
-    >>> root_dict
     {'Type': PDFName(value='Catalog'), 'Pages': PDFReference(object_number=2, generation_number=0)}
-    >>> pages = parser.parse_reference(root_dict['Pages']).value
+    >>> pages = parser.parse_reference(root_dict['Pages'])
     >>> pages
     {'Type': PDFName(value='Pages'), 'Count': 10, 'Kids': [PDFReference(object_number=23, generation_number=0), PDFReference(object_number=31, generation_number=0), PDFReference(object_number=49, generation_number=0), PDFReference(object_number=58, generation_number=0), PDFReference(object_number=64, generation_number=0), PDFReference(object_number=71, generation_number=0), PDFReference(object_number=87, generation_number=0), PDFReference(object_number=94, generation_number=0), PDFReference(object_number=104, generation_number=0), PDFReference(object_number=110, generation_number=0)]}
-    >>> page_1 = parser.parse_reference(pages['Kids'][0]).value
+    >>> page_1 = parser.parse_reference(pages['Kids'][0])
     >>> page_1
     {'Type': PDFName(value='Page'), 'Parent': PDFReference(object_number=2, generation_number=0), 'Contents': PDFReference(object_number=24, generation_number=0), 'Resources': PDFReference(object_number=27, generation_number=0), 'MediaBox': [0, 0, 595.276, 841.89]}
-    >>> contents = parser.parse_reference(page_1['Contents']).value
+    >>> contents = parser.parse_reference(page_1['Contents'])
     >>> contents
     PDFStream(dictionary={'Length': PDFReference(object_number=25, generation_number=0), 'Filter': PDFName(value='FlateDecode')}, stream=<function Parser._stream_reader.<locals>.complete_reader at 0x7f43b1c19d90>)
     >>> data = contents.stream()
