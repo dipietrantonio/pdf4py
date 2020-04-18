@@ -39,7 +39,7 @@ class Document:
 
     def __retrieve_pages(self, item):
         itemDict = self._parser.parse_reference(item)
-        if itemDict["Type"].value == "Pages":
+        if itemDict["Type"] == "Pages":
             for kid in itemDict["Kids"]:
                 self.__retrieve_pages(kid)
         else:

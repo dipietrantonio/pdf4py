@@ -7,14 +7,6 @@ Amongst these definition are found Python representations for PDF Objects
 from collections import namedtuple
 
 
-PDFName = namedtuple("PDFName", ["value"])
-"""
-Represents the PDF Object 'Name'.
-
-Because a PDF Name is an ascii string, the bytes are automatically decoded
-into a Python string which then is stored in the `value` attribute.
-"""
-
 
 PDFHexString = namedtuple("PDFHexString", ["value"])
 """

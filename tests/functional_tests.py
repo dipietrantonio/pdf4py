@@ -35,8 +35,6 @@ def parse_file(filename):
         parser = parpkg.Parser(fp)
         for pdfXrefEntry in parser.xreftable:
             x = parser.parse_reference(pdfXrefEntry)
-            if isinstance(x, parpkg.PDFIndirectObject):
-                x = x.value
             parse_object(parser, x, visited_references)
         
 

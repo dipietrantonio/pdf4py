@@ -423,7 +423,7 @@ class Lexer:
             else:
                 buffer.append(self.__head)
             self.__advance()
-        return buffer.decode('ascii')
+        return buffer.decode('utf8')
 
 
     def __extract_number(self, startsWithNumber):
@@ -571,7 +571,7 @@ class Lexer:
 
         Returns
         -------
-        lex : str, int, float, bool, function, PDFName, PDFKeyword, PDFHexString, PDFSingleton.
+        lex : str, int, float, bool, function, PDFOperator, PDFKeyword, PDFHexString, PDFSingleton.
             The next lexeme from the byte sequence.
 
         Raises
@@ -597,7 +597,7 @@ class Lexer:
         elif self.__head == FORWARD_SLASH:
             self.__advance()
             item = self.__extract_name_or_operator()
-            self.__current_lexeme = PDFName(item) 
+            self.__current_lexeme = item 
         
         elif is_digit(self.__head):
             self.__current_lexeme = self.__extract_number(startsWithNumber=True)

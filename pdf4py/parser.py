@@ -245,13 +245,13 @@ class SequentialParser:
                 keyToken = self._lexer.current_lexeme
                 if isinstance(keyToken, PDFDictDelimiter) and keyToken.value == b">>":
                     break
-                elif not isinstance(keyToken, PDFName):
+                elif not isinstance(keyToken, str):
                     self._raise_syntax_error("Expecting dictionary key, '{}' found instead.".format(keyToken))
                 
                 # now get the value
                 next(self._lexer)
                 keyValue = self.parse_object(obj_num)    
-                D[keyToken.value] = keyValue
+                D[keyToken] = keyValue
             
             try:
                 nextLexeme = next(self._lexer)
@@ -283,7 +283,7 @@ class SequentialParser:
                 self.__ended = True
             return None
     
-        elif isinstance(self._lexer.current_lexeme, (PDFHexString, PDFLiteralString, bool, float, PDFName)):
+        elif isinstance(self._lexer.current_lexeme, (PDFHexString, PDFLiteralString, bool, float, str)):
             s = self._lexer.current_lexeme
             try:
                 next(self._lexer)
@@ -546,7 +546,7 @@ class Parser:
         if not isinstance(o.value, PDFStream):
             self._basic_parser._raise_syntax_error("Expecting a stream containing 'xref' information, but not found.")
         objstm_dict, objstm = o.value
-        if objstm_dict['Type'].value != 'XRef':
+        if objstm_dict['Type'] != 'XRef':
             self._basic_parser._raise_syntax_error("Expecting a stream containing 'xref' information, but not found.")
         trailer = {k : objstm_dict[k] for k in objstm_dict if k in self.TRAILER_FIELDS}
         # read the raw stream content
@@ -684,7 +684,7 @@ class Parser:
             # TODO: improve this
             if isinstance(data, memoryview):
                 data = bytes(data)
-            if D.get('Type') != PDFName('XRef') and self._security_handler is not None:
+            if D.get('Type') != 'XRef' and self._security_handler is not None:
                 try:
                     data = self._security_handler.decrypt_stream(data, D, obj_num)
                 except Exception as e:

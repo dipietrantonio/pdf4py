@@ -169,10 +169,8 @@ def runlengthdecode(data, params):
 def decode(D : 'dict', data):
     filtersChain = D.get('Filter')
     if filtersChain is not None:
-        if isinstance(filtersChain, list):
-            filtersChain = tuple(x.value for x in filtersChain)
-        else:
-            filtersChain = (filtersChain.value,)
+        if not isinstance(filtersChain, list):
+            filtersChain = (filtersChain,)
         filterParams = D.get('DecodeParms', {})
         for filterSpecifier in reversed(filtersChain):
             if filterSpecifier == "Crypt":

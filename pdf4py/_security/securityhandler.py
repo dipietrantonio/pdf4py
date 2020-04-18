@@ -4,7 +4,7 @@ from binascii import unhexlify
 from ..exceptions import *
 from .rc4 import rc4
 from .aes import cbc_decrypt
-from ..types import PDFHexString, PDFLiteralString, PDFName
+from ..types import PDFHexString, PDFLiteralString
 import stringprep
 import unicodedata
 
@@ -244,8 +244,7 @@ class StandardSecurityHandler:
             crypt_filter_name = self.__encryption_dict.get('StrF')
             if crypt_filter_name is None:
                 raise PDFSyntaxError("No 'StrF' entry found in 'Encrypt' dictionary (but V = 4).")
-            crypt_filter_name = crypt_filter_name.value
-            if crypt_filter_name == 'Identity':
+            elif crypt_filter_name == 'Identity':
                 return data
             else:
                 CF = self.__encryption_dict.get('CF')
@@ -253,7 +252,7 @@ class StandardSecurityHandler:
                     raise PDFSyntaxError("No 'CF' entry in 'Encrypt' dictionary (but V = 4)")
                 crypt_filter = CF[crypt_filter_name]
 
-                CFM = crypt_filter.get('CFM', PDFName('None')).value
+                CFM = crypt_filter.get('CFM', 'None')
                 if CFM == 'None':
                     raise PDFUnsupportedError("Crypt filter with CFM = None is not supported.")
                 elif CFM == 'V2':
@@ -279,17 +278,15 @@ class StandardSecurityHandler:
                     raise PDFSyntaxError("No 'StmF' entry found in 'Encrypt' dictionary (but V = 4).")
             else:
                 params = D.get('DecodeParams', {})
-                crypt_filter_name = params.get('Name', PDFName('Identity'))
-            crypt_filter_name = crypt_filter_name.value
+                crypt_filter_name = params.get('Name', 'Identity')
             if crypt_filter_name == 'Identity':
                 return data
             else:
                 CF = self.__encryption_dict.get('CF')
                 if CF is None:
                     raise PDFSyntaxError("No 'CF' entry in 'Encrypt' dictionary (but V = 4)")
-                crypt_filter = CF[crypt_filter_name.value]
-
-                CFM = crypt_filter.get('CFM', PDFName('None')).value
+                crypt_filter = CF[crypt_filter_name]
+                CFM = crypt_filter.get('CFM', 'None')
                 if CFM == 'None':
                     raise PDFUnsupportedError("Crypt filter with CFM = None is not supported.")
                 elif CFM == 'V2':

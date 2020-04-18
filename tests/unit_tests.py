@@ -139,8 +139,8 @@ class LexerUnitTest(unittest.TestCase):
         for x in validNames:
             lex = lexpkg.Lexer(x)
             tok = next(lex)
-            self.assertIsInstance(tok, lexpkg.PDFName)
-            self.assertEqual(tok.value, validNames[x])
+            self.assertIsInstance(tok, str)
+            self.assertEqual(tok, validNames[x])
     
 
 
@@ -220,8 +220,8 @@ lexpkg.PDFLiteralString(b"+"), lexpkg.PDFLiteralString(b"+"), lexpkg.PDFHexStrin
         >>"""
 
         dictCorrectParsed = {
-            "Type" : lexpkg.PDFName("Example"),
-            "Subtype" : lexpkg.PDFName("DictionaryExample"),
+            "Type" : "Example",
+            "Subtype" : "DictionaryExample",
             "Version" : 0.01,
             "IntegerItem" : 12,
             "StringItem" : lexpkg.PDFLiteralString(b"a string"),
@@ -280,7 +280,7 @@ endobj
             list(parpkg.SequentialParser(contentStream, content_stream_mode = False))
         par = parpkg.SequentialParser(contentStream, content_stream_mode = True)
         parsed = list(par)
-        expected = [parpkg.PDFOperator("BT"), parpkg.PDFName("F1"), 12, parpkg.PDFOperator("Tf"), 72, 
+        expected = [parpkg.PDFOperator("BT"), "F1", 12, parpkg.PDFOperator("Tf"), 72, 
             712, parpkg.PDFOperator("Td"), parpkg.PDFLiteralString(b"A stream with an indirect length"), parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
         self.assertEqual(parsed, expected)
 

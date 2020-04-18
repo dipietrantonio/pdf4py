@@ -59,16 +59,16 @@ defines a particular page.
     >>> root_ref = parser.trailer['Root']
     >>> root_dict = parser.parse_reference(root_ref)
     >>> root_dict
-    {'Type': PDFName(value='Catalog'), 'Pages': PDFReference(object_number=2, generation_number=0)}
+    {'Type': 'Catalog', 'Pages': PDFReference(object_number=2, generation_number=0)}
     >>> pages = parser.parse_reference(root_dict['Pages'])
     >>> pages
-    {'Type': PDFName(value='Pages'), 'Count': 10, 'Kids': [PDFReference(object_number=23, generation_number=0), PDFReference(object_number=31, generation_number=0), PDFReference(object_number=49, generation_number=0), PDFReference(object_number=58, generation_number=0), PDFReference(object_number=64, generation_number=0), PDFReference(object_number=71, generation_number=0), PDFReference(object_number=87, generation_number=0), PDFReference(object_number=94, generation_number=0), PDFReference(object_number=104, generation_number=0), PDFReference(object_number=110, generation_number=0)]}
+    {'Type': 'Pages', 'Count': 10, 'Kids': [PDFReference(object_number=23, generation_number=0), PDFReference(object_number=31, generation_number=0), PDFReference(object_number=49, generation_number=0), PDFReference(object_number=58, generation_number=0), PDFReference(object_number=64, generation_number=0), PDFReference(object_number=71, generation_number=0), PDFReference(object_number=87, generation_number=0), PDFReference(object_number=94, generation_number=0), PDFReference(object_number=104, generation_number=0), PDFReference(object_number=110, generation_number=0)]}
     >>> page_1 = parser.parse_reference(pages['Kids'][0])
     >>> page_1
-    {'Type': PDFName(value='Page'), 'Parent': PDFReference(object_number=2, generation_number=0), 'Contents': PDFReference(object_number=24, generation_number=0), 'Resources': PDFReference(object_number=27, generation_number=0), 'MediaBox': [0, 0, 595.276, 841.89]}
+    {'Type': 'Page', 'Parent': PDFReference(object_number=2, generation_number=0), 'Contents': PDFReference(object_number=24, generation_number=0), 'Resources': PDFReference(object_number=27, generation_number=0), 'MediaBox': [0, 0, 595.276, 841.89]}
     >>> contents = parser.parse_reference(page_1['Contents'])
     >>> contents
-    PDFStream(dictionary={'Length': PDFReference(object_number=25, generation_number=0), 'Filter': PDFName(value='FlateDecode')}, stream=<function Parser._stream_reader.<locals>.complete_reader at 0x7f43b1c19d90>)
+    PDFStream(dictionary={'Length': PDFReference(object_number=25, generation_number=0), 'Filter': 'FlateDecode'}, stream=<function Parser._stream_reader.<locals>.complete_reader at 0x7f43b1c19d90>)
     >>> data = contents.stream()
     >>> data
     b'q\n/I0 Do\nQ\nq\n0.539 w\nBT\n/F0 11 Tf\n0 TL\n48 804.69 Td\n[(Proceedings 7th Modelica Conference, Como, Italy)65(, Sep. 20-22, 2009)]TJ\nET\nQ\nq\n0.539 w\nBT\n/F0 11 Tf\n0 TL\n48 35.8 Td\n[(\xa9 )18(The Modelica )55(Association, 2009)]TJ\nET\nQ\nq\n0.539 w\nBT\n/F0 11 Tf\n0 TL\n289.388 35.8 Td\n[(251)]TJ\nET\nQ\nq\n0.49 w\nBT\n/F0 10 Tf\n0 TL\n435.066 37 Td\n[(DOI: 10.3384/ecp09430032)]TJ\nET\nQ\n'
@@ -84,7 +84,7 @@ In the last part can be seen a sequence of instructions that the rendering progr
     >>> next(seq_iter)
     PDFOperator(value='q')
     >>> next(seq_iter)
-    PDFName(value='I0')
+    'I0'
     >>> next(seq_iter)
     PDFOperator(value='Do')
     >>> next(seq_iter)
