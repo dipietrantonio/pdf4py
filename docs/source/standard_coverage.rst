@@ -6,7 +6,7 @@ PDF 1.7 standard coverage
 In this file the progress in implementing all the features in the `PDF 1.7 standard <http://wwwimages.adobe.com/www.adobe.com/content/dam/acom/en/devnet/pdf/pdfs/PDF32000_2008.pdf>`_ is tracked.
 Chapters 1 to 6 of the standard are devoted to give a general introduction to the standard whereas Chapter 7 is where the PDF syntax is
 defined. It follows that the best way to keep track of the progress is to specify for each section whether the illustrated features have
-been implemented or not. As the development goes on, the various sections decribing features that have been supported will be marked with
+been implemented or not. As the development goes on, the various sections describing features that have been supported will be marked with
 an check symbol (✓) in the following table. Moreover, the tilde symbol (~) means almost every aspect is supported or that the implementation
 seems to work but more testing is necessary. Finally, the cross symbol (✗) informs that there is no support at this stage for the associated
 feature.
@@ -68,15 +68,15 @@ feature.
 +-------------------+---------------------------------+----------------------------------------+
 | 7.5.6             | Incremental updates             | ✓                                      |
 +-------------------+---------------------------------+----------------------------------------+
-| 7.5.7             | Object streams                  | ~ (`Extend` option support missing)    |
+| 7.5.7             | Object streams                  | ✓                                      |
 +-------------------+---------------------------------+----------------------------------------+
 | 7.5.8             | Cross Reference Streams         | ✓                                      |
 +-------------------+---------------------------------+----------------------------------------+
-| *7.6*             | *Encription*                    | ~ (no embedded files for now)          |
+| *7.6*             | *Encryption*                    | ~ (no File Specs and Public Key Crypto)|
 +-------------------+---------------------------------+----------------------------------------+
 | 7.6.1             | General                         | ✓                                      |
 +-------------------+---------------------------------+----------------------------------------+
-| 7.6.2             | General Encription Algorithm    | ✓                                      |
+| 7.6.2             | General Encryption Algorithm    | ✓                                      |
 +-------------------+---------------------------------+----------------------------------------+
 | 7.6.3             | Standard Security Handler       | ~ (permission bits ignored)            |
 +-------------------+---------------------------------+----------------------------------------+
@@ -144,7 +144,7 @@ feature.
 +-------------------+---------------------------------+----------------------------------------+
 
 Subsequent chapters describe higher level aspects that are built on top of the PDF syntax and elementary objects.
-As of now there is no support for those features, as exmplained in the landing page of the documentation.
+As of now there is no support for those features, as explained in the landing page of the documentation.
 
 In addition, the AESV3 encryption method specified in the 
 `PDF 1.7 Extension 3 document <https://www.adobe.com/content/dam/acom/en/devnet/acrobat/pdfs/adobe_supplement_iso32000.pdf>`_

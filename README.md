@@ -12,8 +12,8 @@ of a PDF document and uses its entries to give the user the ability to locate PD
 the file and parse them into suitable Python objects.
 
 **DISCLAIMER**: this package hasn't reached a stable version (>= 1.0.0) yet. Although the parser
-API is quite simple it may change suddenly from one release to anther. All breaking changes will
-be properly notified in the release notes.
+API is quite simple it may change suddenly from one release to the next one. All breaking changes
+will be properly notified in the release notes.
 
 
 ## Quick example
@@ -76,7 +76,7 @@ a better way to understand the PDF than writing a parser for it?
 
 ## Documentation
 
-You can read the documentation for this package on [readthedocs.io](https://pdf4py.readthedocs.io/en/latest/).
+You can read the documentation on [readthedocs.io](https://pdf4py.readthedocs.io/en/latest/).
 
 
 ## Contributing
@@ -92,8 +92,7 @@ Contributions are more than welcome! Please, when writing code or documentation 
 - to adopt as much as possible a test-driven development process. Each contribution must be accompanied by a 
   test addition/modification.
 
-If you are wondering in which way you can help, check the [TO-DO list](todo.md). For now it will do as a
-simple "road map".  
+If you are wondering in which way you can help, check the [TODO list](https://github.com/Halolegend94/pdf4py/blob/master/TODO.md). For now it will do as a simple "road map".  
 
-If you found a bug, please file a new issue here on GitHub. Proposing fixes, changes and additions can
+If you have found a bug, please file a new issue here on GitHub. Proposing fixes, changes and additions can
 be done through a pull request.

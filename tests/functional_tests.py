@@ -3,7 +3,7 @@ import unittest
 import logging
 from binascii import unhexlify
 
-KEYWORDS_OF_INTEREST = ['Extends', 'F']
+
 
 def parse_object(parser, obj, visited):
     if isinstance(obj, parpkg.PDFStream):
@@ -15,16 +15,11 @@ def parse_object(parser, obj, visited):
         for x in obj:
             parse_object(parser, x, visited)
     elif isinstance(obj, dict):
-        interesting_keys = set(obj.keys()).intersection(KEYWORDS_OF_INTEREST)
-        if len(interesting_keys) > 0:
-            raise Exception('Found keyword(s) {} in dictionary {}'.format(interesting_keys, obj))
         for k in obj:
             parse_object(parser, obj[k], visited)
     elif isinstance(obj, parpkg.PDFReference) and obj not in visited:
         visited.add(obj)
         x = parser.parse_reference(obj)
-        if isinstance(x, parpkg.PDFIndirectObject):
-            x = x.value
         parse_object(parser, x, visited)
 
 

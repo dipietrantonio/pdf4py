@@ -16,9 +16,7 @@ and can assume the value `LOW`, `MEDIUM` or `HIGH`.
 - [HIGH] (TO DO) To implement tests for some of the stream filters.
 - [MEDIUM] (TO DO) To analyze performances and to compare them with other libraries.
 - [LOW] (TO DO) To go through the 2.0 standard and see if there are major changes.
-- [LOW] (TO DO) To implement support for the 'Extends' keyword in a object stream.
-- [HIGH] (TO DO) Not to decrypt string in a cross reference dictionary.
+- [HIGH] (TO DO) Not to decrypt strings in a cross reference dictionary.
 - [HIGH] (TO DO) High some information about the cross reference table or about Cross Reference
   Streams (their identifiers).
-- [MEDIUM] (TO DO) Better handling of Compressed Object Streams (parse them only once and save them
-  in a Python object)
+- [MEDIUM] (TO DO) Better handling of Compressed Object Streams.

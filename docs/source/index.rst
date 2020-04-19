@@ -1,3 +1,11 @@
+.. toctree::
+    :maxdepth: 3
+    :hidden:
+
+    tutorials
+    modules/index
+    standard_coverage
+
 pdf4py's documentation
 ==================================
 
@@ -7,7 +15,6 @@ simple API that can be used to build higher level functionalities (e.g. text and
 extraction). In particular, it defines the class `Parser` that reads the *Cross Reference Table*
 of a PDF document and uses its entries to give the user the ability to locate PDF objects within
 the file and parse them into suitable Python objects.
-
 
 .. image:: https://travis-ci.org/Halolegend94/pdf4py.svg?branch=master
     :target: https://travis-ci.org/Halolegend94/pdf4py
@@ -19,6 +26,11 @@ the file and parse them into suitable Python objects.
     :target: https://pypi.org/project/pdf4py/
 .. image:: https://img.shields.io/pypi/dm/pdf4py?color=brightgreen
     :target: https://pypi.org/project/pdf4py/
+
+**DISCLAIMER**: this package hasn't reached a stable version (>= 1.0.0) yet. Although the parser
+API is quite simple it may change suddenly from one release to the next one. All breaking changes
+will be properly notified in the release notes.
+
 
 Quick example
 -------------
@@ -81,14 +93,3 @@ there was not an established Python module to easily parse a PDF document. In or
 why I delved into the PDF 1.7 specification: since that moment I've got interested more and more
 in the inner workings of one of the most important and ubiquitous file format. And what's
 a better way to understand the PDF than writing a parser for it?
-
-
-Table of Contents
------------------
-
-.. toctree::
-    :maxdepth: 3
-
-    tutorials
-    modules/index
-    standard_coverage
