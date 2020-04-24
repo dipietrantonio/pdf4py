@@ -1,6 +1,6 @@
 import unittest
 from .context import *
-from pdf4py._decoders import ascii85decode, runlengthdecode
+from pdf4py._decoders import ascii85decode, runlengthdecode, asciihexdecode
 from binascii import hexlify
 
 
@@ -8,7 +8,7 @@ class DecodersTestCase(unittest.TestCase):
 
 
     def test_ascii85_decode(self):
-        ascii85msg = '<~6Z6LH+Co%nDe*F#+@/pn8P(m!~>'
+        ascii85msg = b'6Z6LH+Co%nDe*F#+@/pn8P(m!~>'
         original = 'Code decodes ASCII85'.encode('ascii')
         self.assertEqual(original, ascii85decode(ascii85msg, None))
 
@@ -18,3 +18,8 @@ class DecodersTestCase(unittest.TestCase):
         decoded = b'Hello world.' + (257 - 130) * b'c'
         self.assertEqual(decoded, runlengthdecode(rle, None))
 
+
+    def test_asciihexdecode(self):
+        decoded = b"87cURD]i,\"Ebo80~>"
+        encoded = b"3837635552445d692c2245626f38307e3e>"
+        self.assertEqual(asciihexdecode(encoded, None), decoded)

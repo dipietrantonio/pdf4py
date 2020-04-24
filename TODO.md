@@ -13,10 +13,7 @@ and can assume the value `LOW`, `MEDIUM` or `HIGH`.
   class `Document`, a high level abstraction of the PDF file that understands and
   provides an interface to the document structure (sections 7.7 to 7.10: pages, 
   content streams, etc ..). Currently I am experimenting as I study those sections in depth.
-- [HIGH] (TO DO) To implement tests for some of the stream filters.
+- [HIGH] (TO DO) To implement tests for some predictors used in FlateDecode filter.
 - [MEDIUM] (TO DO) To analyze performances and to compare them with other libraries.
 - [LOW] (TO DO) To go through the 2.0 standard and see if there are major changes.
-- [HIGH] (TO DO) Not to decrypt strings in a cross reference dictionary.
-- [HIGH] (TO DO) High some information about the cross reference table or about Cross Reference
-  Streams (their identifiers).
 - [MEDIUM] (TO DO) Better handling of Compressed Object Streams.

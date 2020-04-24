@@ -1,7 +1,7 @@
 import zlib
 from math import floor
 from binascii import unhexlify
-from .exceptions import PDFUnsupportedError
+from .exceptions import PDFUnsupportedError, PDFGenericError
 from ._charset import BLANKS
 
 decoders = {}
@@ -105,15 +105,13 @@ def flate_decode(data, params):
 
 @register("ASCIIHexDecode")
 def asciihexdecode(data, params):
-    # TODO: test it
     EOD = data.find(ord('>'))
     if EOD != len(data) - 1:
-        # TODO: better message
-        raise Exception("Badly encoded data.")
-    data = [x for x in data if x not in BLANKS]
+        raise PDFGenericError("ASCIIHexDecode: badly encoded data.")
+    data = [x for x in data[:-1] if x not in BLANKS]
     if len(data) % 2 == 1:
         data.append(ord('0'))
-    return unhexlify(data)
+    return unhexlify(bytes(data))
 
 
 @register("JBIG2Decode")
@@ -134,8 +132,8 @@ def dct_decode(data, params):
 @register("ASCII85Decode")
 def ascii85decode(data, params):
     result = bytearray()
-    for i in range(2, len(data) - 4, 5):
-        intermediate = sum((ord(x) - 33) * 85**pos for pos, x in enumerate(reversed(data[i:i+5])))
+    for i in range(0, len(data) - 2, 5):
+        intermediate = sum((x - 33) * 85**pos for pos, x in enumerate(reversed(data[i:i+5])))
         base_256 = bytearray() 
         while intermediate > 0:
             div, rem = intermediate // 256, intermediate % 256
