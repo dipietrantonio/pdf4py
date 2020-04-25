@@ -87,10 +87,18 @@ class ParseAllPDFs(unittest.TestCase):
 class DocumentTestCase(unittest.TestCase):
 
 
-    def test_print_document_catalog(self):
+    def test_info_and_page_retrieval(self):
+        """
+        Tests functionalities to access a PDF Document's basic information and its
+        pages.
+        """
         with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
-            myPdfDoc = docpkg.Document(fp)
-            self.assertEqual(len(myPdfDoc.pages), 10)
+            pdf_doc = docpkg.Document(fp)
+            self.assertEqual(len(pdf_doc.pages), 10)
+            self.assertIsInstance(pdf_doc.pages[4], docpkg.Page)
+            self.assertEqual(pdf_doc[4], pdf_doc.pages[4])
+            self.assertFalse(True)
+
 
 
 if __name__ == "__main__":

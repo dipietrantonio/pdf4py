@@ -284,6 +284,8 @@ endobj
             712, parpkg.PDFOperator("Td"), parpkg.PDFLiteralString(b"A stream with an indirect length"), parpkg.PDFOperator("Tj"), parpkg.PDFOperator("ET")]
         self.assertEqual(parsed, expected)
 
+
+
 class ParserTestCase(unittest.TestCase):
 
 
@@ -310,30 +312,6 @@ startxref
         self.assertEqual(parsedObjects, [(1, 0), (2, 0), (3, 0), (4, 0), (5, 0), (6, 0)])
 
 
-
-
-class DocumentTestCase(unittest.TestCase):
-
-    def test_document_catalog(self):
-        with open(os.path.join(PDFS_FOLDER, "0000.pdf"), "rb") as fp:
-            myPdfDoc = docpkg.Document(fp)
-            self.assertIn("Pages", myPdfDoc.catalog)
-    
     
 if __name__ == "__main__":
     unittest.main()
-
-
-
-class DecodersUnitTest(unittest.TestCase):
-
-    def test_tiff_predictor(self):
-        image_filtered = bytes([
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
-        ])
-        image_unfiltered = bytes([
-            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
-            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
-        ])
-        self.assertEqual(image_unfiltered, tiff_predictor(image_filtered, 3, 8, 4))

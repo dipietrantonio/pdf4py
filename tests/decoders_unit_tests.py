@@ -23,3 +23,15 @@ class DecodersTestCase(unittest.TestCase):
         decoded = b"87cURD]i,\"Ebo80~>"
         encoded = b"3837635552445d692c2245626f38307e3e>"
         self.assertEqual(asciihexdecode(encoded, None), decoded)
+
+
+    def test_tiff_predictor(self):
+        image_filtered = bytes([
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
+        ])
+        image_unfiltered = bytes([
+            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+            1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3,
+        ])
+        self.assertEqual(image_unfiltered, tiff_predictor(image_filtered, 3, 8, 4))
