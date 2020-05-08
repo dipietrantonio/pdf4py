@@ -17,3 +17,4 @@ and can assume the value `LOW`, `MEDIUM` or `HIGH`.
 - [MEDIUM] (TO DO) To analyze performances and to compare them with other libraries.
 - [LOW] (TO DO) To go through the 2.0 standard and see if there are major changes.
 - [MEDIUM] (TO DO) Better handling of Compressed Object Streams.
+- [HIGH] (TO DO) Investigate document structure of pdf 0014. Looks like it is different.

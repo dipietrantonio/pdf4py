@@ -96,8 +96,7 @@ class DocumentTestCase(unittest.TestCase):
             pdf_doc = docpkg.Document(fp)
             self.assertEqual(len(pdf_doc.pages), 10)
             self.assertIsInstance(pdf_doc.pages[4], docpkg.Page)
-            self.assertEqual(pdf_doc[4], pdf_doc.pages[4])
-            self.assertFalse(True)
+            self.assertEqual(pdf_doc[4].resources, pdf_doc.pages[4].resources)
 
 
 
