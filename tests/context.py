@@ -12,7 +12,9 @@ import pdf4py._lexer as lexpkg
 import pdf4py.parser as parpkg
 import pdf4py.document as docpkg
 import pdf4py._security.rc4 as rc4pkg
+import pdf4py.types as typesmod
 from pdf4py._security.aes import *
+import pdf4py.datastructures as dsmod
 from pdf4py._decoders import tiff_predictor
 from pdf4py.exceptions import *
 
