@@ -47,5 +47,21 @@ class NameTreeTestCase(unittest.TestCase):
             
 
 
+class NumberTreeTestCase(unittest.TestCase):
+
+
+    def test_root_with_only_values(self):
+        with open(os.path.join(PDFS_FOLDER, "0008.pdf"), "rb") as fp:
+            p = parpkg.Parser(fp)
+            root = p.parse_reference(p.trailer['Root'])
+            nt_ref = p.parse_reference(root['PageLabels'])
+            nt = dsmod.NumberTree(p, nt_ref)
+            val = nt[0]
+            self.assertEqual(val, PDFReference(object_number=106, generation_number=0))
+            with self.assertRaises(KeyError):
+                nt[1]
+
+
+
 if __name__ == "__main__":
     unittest.main()
