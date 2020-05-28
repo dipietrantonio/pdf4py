@@ -1,15 +1,15 @@
 from datetime import datetime, timezone, timedelta
 from .exceptions import PDFGenericError
 from .types import PDFReference, PDFHexString, PDFLiteralString
+from numbers import Integral
 
 
 _DATE_KEYS = ['year', 'month', 'day', 'hour', 'minute', 'second', 'tzinfo']
 
 
-class NameTree:
-    """
-    An ordered dict whose keys are strings.
-    """
+
+class AbstractTree:
+
 
     def __init__(self, parser : 'Parser', obj : 'dict or PDFReference'):
         self._parser = parser
@@ -22,7 +22,7 @@ class NameTree:
 
         Parameters
         ----------
-        key : PDFLiteralString or PDFHexString
+        key : PDFLiteralString, PDFHexString, Integral
             key to search for.
         
         Returns
@@ -35,10 +35,10 @@ class NameTree:
         ke : KeyError
             Exception thrown if `key` is not found.
         """
-        if not isinstance(key, (PDFHexString, PDFLiteralString)):
+        if not isinstance(key, self._pdftype):
             raise ValueError("Key specified is not a string object.")
         current_node = self._root
-        while 'Names' not in current_node:
+        while self._label not in current_node:
             kids = current_node['Kids']
             if isinstance(kids, PDFReference):
                 kids = self._parser.parse_reference(kids)
@@ -48,23 +48,23 @@ class NameTree:
                 limits = []
                 for x in kid['Limits']:
                     if isinstance(x, PDFReference):
-                        x = self._parser.parse_reference(x).value
+                        x = self._parser.parse_reference(x)
                     limits.append(x)
-                if key.value < limits[0]:
+                if key < limits[0]:
                     raise KeyError(key)
-                if ket.value <= limits[1]:
+                if key <= limits[1]:
                     current_node = kid
                     break
             if current_node is None:
                 raise KeyError(key)
         # TODO: binary search here
-        nitems = len(current_node['Names'])
+        nitems = len(current_node[self._label])
         for i in range(0, nitems, 2):
-            k = current_node['Names'][i]
+            k = current_node[self._label][i]
             if isinstance(k, PDFReference):
                 k = self._parser.parse_reference(k)
-            if k.value == key.value:
-                return  current_node['Names'][i + 1]
+            if k == key:
+                return  current_node[self._label][i + 1]
         raise KeyError(key)
 
         
@@ -103,6 +103,23 @@ class NameTree:
         except KeyError:
             return default    
 
+
+
+class NameTree(AbstractTree):
+    """
+    An ordered dict whose keys are strings.
+    """
+    _pdftype = (PDFHexString, PDFLiteralString)
+    _label = 'Names'
+
+
+
+class NumberTree(AbstractTree):
+    """
+    An ordered dict whose keys are strings.
+    """
+    _pdftype = Integral
+    _label = 'Nums'
 
 
 def parse_date(s : 'str'):

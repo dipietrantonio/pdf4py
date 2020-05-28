@@ -57,7 +57,7 @@ class NumberTreeTestCase(unittest.TestCase):
             nt_ref = p.parse_reference(root['PageLabels'])
             nt = dsmod.NumberTree(p, nt_ref)
             val = nt[0]
-            self.assertEqual(val, PDFReference(object_number=106, generation_number=0))
+            self.assertEqual(val, typesmod.PDFReference(object_number=106, generation_number=0))
             with self.assertRaises(KeyError):
                 nt[1]
 
