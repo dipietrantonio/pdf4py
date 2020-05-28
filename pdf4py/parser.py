@@ -412,6 +412,10 @@ class Parser:
         logging.debug("_read_header finished.")
     
 
+    def __call__(self, reference):
+        return self.parse_reference(reference)
+
+
     @lru_cache(maxsize=256)
     def parse_reference(self, reference):
         """

@@ -288,7 +288,14 @@ endobj
 
 class ParserTestCase(unittest.TestCase):
 
+    def test_parse_with_call(self):
+        with open(os.path.join(PDFS_FOLDER, "0004.pdf"), 'rb') as fp:
+            p = parpkg.Parser(fp)
+            root = p(p.trailer['Root'])
+            self.assertIsInstance(root, dict)
+            self.assertTrue('Pages' in root)
 
+    
     def test_parse_xref_section(self):
         sample = b"""xref
 0 7
