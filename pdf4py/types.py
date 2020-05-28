@@ -14,7 +14,7 @@ Represents the PDF Object 'Hexadecimal string'.
 
 An hexadecimal string is used mainly to encode a small quantity of binary data.
 The sequence of hexadecimal digits are not decoded from ascii but stored directly
-as bytes in `value` attribute. This is so because you tipically want to pass that
+as bytes in `value` attribute. This is so because you typically want to pass that
 value to the `binascii.unhexlify` function.
 """
 
@@ -85,14 +85,14 @@ PDFKeyword = namedtuple("PDFKeyword", ["value"])
 
 PDFSingleton = namedtuple("PDFSingleton", ["value"])
 """
-[Internal] Represents a singleton in the PDF greammar, for example ``{``.
+[Internal] Represents a singleton in the PDF grammar, for example ``{``.
 """
 
 
 PDFStreamReader = namedtuple("PDFStreamReader", ["value"])
 """
 [Internal] A wrapper around a function ``f(length)`` returned by `Lexer` to `Parser` when parsing 
-a PDF stream object.``
+a PDF stream object.
 """
 
 

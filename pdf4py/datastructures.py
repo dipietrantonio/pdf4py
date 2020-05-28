@@ -18,7 +18,7 @@ class NameTree:
 
     def __getitem__(self, key):
         """
-        Retrieves the value associated with ``key``.
+        Retrieves the value associated with `key`.
 
         Parameters
         ----------
@@ -29,6 +29,11 @@ class NameTree:
         -------
         val : Any PDF object type
             The associated value.
+        
+        Raises
+        ------
+        ke : KeyError
+            Exception thrown if `key` is not found.
         """
         if not isinstance(key, (PDFHexString, PDFLiteralString)):
             raise ValueError("Key specified is not a string object.")
@@ -64,6 +69,14 @@ class NameTree:
 
         
     def __contains__(self, item):
+        """
+        Checks if `item` is contained in the dictionary.
+
+        Parameters
+        ----------
+        item : PDFLiteralString or PDFHexString
+            The item to search for.
+        """
         try:
             self.__getitem__(item)
             return True
@@ -72,10 +85,24 @@ class NameTree:
     
 
     def get(self, key, default = None):
+        """
+        Returns the value associated with `key` if present, the default otherwise.
+
+        Parameters
+        ----------
+        key : PDFLiteralString or PDFHexString
+            The key to search for.
+        
+        Returns
+        -------
+        val : Any PDF object type
+            The value associated to `key` or `default`.
+        """
         try:
             return self.__getitem__(key)
         except KeyError:
             return default    
+
 
 
 def parse_date(s : 'str'):
